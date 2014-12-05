@@ -13,6 +13,7 @@ import (
     "./defaults"
     "./util"
     "fmt"
+    "flag"
 )
 
 type Index map[string]Env
@@ -37,10 +38,23 @@ var funcMap = template.FuncMap{
     },
 }
 
+var srcDir string
+var destDir string
+var showHelp bool
+
 func main() {
     defer errHandler()
-    srcDir  := "sample-site/"
-    destDir := "build/"
+
+    parseArgs()
+    prog := os.Args[0]
+    if len(os.Args) < 2 || showHelp {
+        println(prog, "usage:")
+        flag.PrintDefaults()
+        return
+    }
+    if !validateArgs() {
+        return
+    }
 
     env := readDirEnv(srcDir)
     baseEnv = merge(env, baseEnv)
@@ -58,6 +72,30 @@ func main() {
     println("building output...", layoutsDir)
     buildOutput(t, srcDir, destDir)
     println("** done.")
+}
+
+func validateArgs() bool {
+    info, err := os.Lstat(srcDir)
+    if err != nil {
+        fmt.Printf("failed to open directory: %s\n", srcDir)
+        return false
+    }
+    if !info.IsDir() {
+        fmt.Printf("%s is not a directory\n", srcDir)
+        return false
+    }
+    if destDir == "" {
+        fmt.Printf("destination directory required\n")
+        return false
+    }
+    return true
+}
+
+func parseArgs() {
+    flag.StringVar(&srcDir, "src", "", "source files")
+    flag.StringVar(&destDir, "dest", "", "destination files")
+    flag.BoolVar(&showHelp, "help", false, "show help")
+    flag.Parse()
 }
 
 func errHandler() {
