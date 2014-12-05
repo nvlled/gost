@@ -16,6 +16,10 @@ import (
     "flag"
 )
 
+const (
+    MARKER_NAME = ".gost-build"
+)
+
 type Index map[string]Env
 
 var index = make(Index)
@@ -86,6 +90,11 @@ func validateArgs() bool {
     }
     if destDir == "" {
         fmt.Printf("destination directory required\n")
+        return false
+    }
+    if !isValidBuildDir(destDir) {
+        fmt.Printf("* %s is not a valid build directory. \n", destDir)
+        fmt.Printf("* Must be a non-existent directory or a previous build directory\n")
         return false
     }
     return true
@@ -187,8 +196,9 @@ func loadLayouts(t *template.Template, dir string) {
 }
 
 func buildOutput(t *template.Template, srcDir, destDir string) {
-
     os.RemoveAll(destDir)
+    util.Mkdir(destDir)
+    writeMarker(destDir)
 
     fn := func(srcPath string, info os.FileInfo, _ error) (err error) {
         if skipFile(srcPath) || info.IsDir() {
@@ -214,6 +224,20 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
     filepath.Walk(srcDir, fn)
 }
 
+func isValidBuildDir(dir string) bool {
+    if _, err := os.Lstat(dir); err != nil {
+        if os.IsNotExist(err) {
+            return true
+        }
+    }
+    _, err := os.Open(join(dir, MARKER_NAME))
+    return err == nil
+}
+
+func writeMarker(dir string) {
+    _, err := os.Create(join(dir, MARKER_NAME))
+    fail(err)
+}
 
 func join(path ...string) string {
     return filepath.Join(path...)
