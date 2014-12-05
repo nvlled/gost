@@ -1,5 +1,5 @@
 
-package main
+package genv
 
 import (
     "os"
@@ -10,9 +10,9 @@ import (
     "fmt"
 )
 
-type Env map[string]interface{}
+type T map[string]interface{}
 
-func (env Env) getOk(k string) (string, bool) {
+func (env T) GetOk(k string) (string, bool) {
     v, ok := env[k]
     if !ok {
         return "", false
@@ -23,19 +23,19 @@ func (env Env) getOk(k string) (string, bool) {
     }
 }
 
-func (env Env) get(k string) string {
-    v, _ := env.getOk(k)
+func (env T) Get(k string) string {
+    v, _ := env.GetOk(k)
     return v
 }
 
 const (
-    ENV_FILENAME = "env"
-    ENV_SEP = ":"
-    ENV_LINE_SEP = "-----"
+    FILENAME = "env"
+    SEP = ":"
+    LINE_SEP = "-----"
 )
 
-func merge(dest Env, src Env) Env {
-    env := make(Env)
+func Merge(dest T, src T) T {
+    env := make(T)
     for k, v := range src {
         env[k] = v
     }
@@ -47,10 +47,10 @@ func merge(dest Env, src Env) Env {
     return env
 }
 
-func parseEnv(s string) Env {
-    env := make(Env)
+func Parse(s string) T {
+    env := make(T)
     for _, line := range breakLines(s) {
-        sub := strings.SplitN(line, ENV_SEP, 2)
+        sub := strings.SplitN(line, SEP, 2)
         if len(sub) == 2 {
             k := strings.TrimSpace(sub[0])
             v := strings.TrimSpace(sub[1])
@@ -60,29 +60,29 @@ func parseEnv(s string) Env {
     return env
 }
 
-func readDirEnv(path string) Env {
-    filename := filepath.Join(path, ENV_FILENAME)
+func ReadDir(path string) T {
+    filename := filepath.Join(path, FILENAME)
 
     file, err := os.Open(filename)
-    if err != nil { return make(Env) }
+    if err != nil { return make(T) }
     bytes, err := ioutil.ReadAll(file)
-    if err != nil { return make(Env) }
+    if err != nil { return make(T) }
 
-    return parseEnv(string(bytes))
+    return Parse(string(bytes))
 }
 
-func readEnv(path string) Env {
+func Read(path string) T {
     // TODO: reduce boilerplate
     file, err := os.Open(path)
-    if err != nil { return make(Env) }
+    if err != nil { return make(T) }
     bytes, err := ioutil.ReadAll(file)
-    if err != nil { return make(Env) }
+    if err != nil { return make(T) }
 
     lines := strings.Split(string(bytes), "\n")
     start := -1
     end   := -1
     for i, line := range lines {
-        if line == ENV_LINE_SEP {
+        if line == LINE_SEP {
             if start < 0 {
                 start = i+1
             } else {
@@ -92,13 +92,13 @@ func readEnv(path string) Env {
         }
     }
     if start < 0 || end < 0 {
-        return make(Env)
+        return make(T)
     }
     lines = lines[start:end]
-    return parseEnv(joinLines(lines))
+    return Parse(joinLines(lines))
 }
 
-func readFile(path string) (s string) {
+func ReadFile(path string) (s string) {
     file, err := os.Open(path)
     if err != nil {
         log.Println(err)
@@ -111,10 +111,10 @@ func readFile(path string) (s string) {
     }
 
     s = string(bytes)
-    i := strings.LastIndex(s, ENV_LINE_SEP)
+    i := strings.LastIndex(s, LINE_SEP)
     if i > 0 {
         // Skip env block
-        i += len(ENV_LINE_SEP)+1
+        i += len(LINE_SEP)+1
         s = string(bytes[i:])
     }
     return

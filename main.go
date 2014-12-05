@@ -12,6 +12,7 @@ import (
     "bytes"
     "./defaults"
     "./util"
+    "./genv"
     "fmt"
     "flag"
 )
@@ -20,7 +21,7 @@ const (
     MARKER_NAME = ".gost-build"
 )
 
-type Index map[string]Env
+type Index map[string]genv.T
 
 var index = make(Index)
 var pathIndex = make(Index)
@@ -28,7 +29,7 @@ var pathIndex = make(Index)
 var includesDir = path.Clean(defaults.INCLUDES_DIR)
 var layoutsDir = path.Clean(defaults.LAYOUTS_DIR)
 
-var baseEnv = Env{
+var baseEnv = genv.T{
     "includes-dir" : defaults.INCLUDES_DIR,
     "layouts-dir" : defaults.LAYOUTS_DIR,
 }
@@ -61,10 +62,10 @@ func main() {
         return
     }
 
-    env := readDirEnv(srcDir)
-    baseEnv = merge(env, baseEnv)
-    includesDir = path.Clean(join(srcDir, baseEnv.get("includes-dir")))
-    layoutsDir = path.Clean(join(srcDir, baseEnv.get("layouts-dir")))
+    env := genv.ReadDir(srcDir)
+    baseEnv = genv.Merge(env, baseEnv)
+    includesDir = path.Clean(join(srcDir, baseEnv.Get("includes-dir")))
+    layoutsDir = path.Clean(join(srcDir, baseEnv.Get("layouts-dir")))
 
     printLog("building index...")
     buildIndex(srcDir, baseEnv)
@@ -127,19 +128,19 @@ func skipFile(file string) bool {
     base := filepath.Base(file)
     dir := filepath.Dir(file)
     return strings.HasPrefix(base, ".") || //exclude dot files
-        base == ENV_FILENAME ||
+        base == genv.FILENAME ||
         dir == includesDir ||
         dir == layoutsDir
 }
 
-func buildIndex(path string, parentEnv Env) {
+func buildIndex(path string, parentEnv genv.T) {
     info, err := os.Lstat(path)
     if err != nil {
         log.Println(err)
     } else if info.IsDir() {
         // FIX: baseEnv is read twice
-        env := readDirEnv(path)
-        env = merge(env, parentEnv)
+        env := genv.ReadDir(path)
+        env = genv.Merge(env, parentEnv)
 
         dirs, err := util.ReadDir(path, skipFile)
 
@@ -152,12 +153,12 @@ func buildIndex(path string, parentEnv Env) {
             }
         }
     } else if isItemplate(path) {
-        env := readEnv(path)
-        env = merge(env, parentEnv)
+        env := genv.Read(path)
+        env = genv.Merge(env, parentEnv)
         env["path"] = path
 
         pathIndex[path] = env
-        if id, ok := env.getOk("id"); ok {
+        if id, ok := env.GetOk("id"); ok {
             if otherEnv, dokie := index[id]; dokie {
                 otherPath := otherEnv["path"]
                 log.Println("Duplicate id for paths", path, otherPath)
@@ -170,15 +171,15 @@ func buildIndex(path string, parentEnv Env) {
     }
 }
 
-func applyTemplate(t *template.Template, s string, env Env) string {
-    path := env.get("path")
+func applyTemplate(t *template.Template, s string, env genv.T) string {
+    path := env.Get("path")
     buf := new(bytes.Buffer)
     template.Must(t.New(path).Parse(s)).Execute(buf, env)
     return buf.String()
 }
 
-func applyLayout(t *template.Template, s string, env Env) string {
-    layout := env.get("layout")
+func applyLayout(t *template.Template, s string, env genv.T) string {
+    layout := env.Get("layout")
     if layout == "" {
         return s
     }
@@ -212,7 +213,7 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 
         if isItemplate(srcPath) {
             env := pathIndex[srcPath]
-            s := readFile(srcPath)
+            s := genv.ReadFile(srcPath)
             s = applyTemplate(t, s, env)
             s = applyLayout(t, s, env)
             printLog("rendering", srcPath, "->", destPath)
