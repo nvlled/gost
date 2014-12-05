@@ -45,6 +45,7 @@ var funcMap = template.FuncMap{
 var srcDir string
 var destDir string
 var showHelp bool
+var verbose bool
 
 func main() {
     defer errHandler()
@@ -65,15 +66,15 @@ func main() {
     includesDir = path.Clean(join(srcDir, baseEnv.get("includes-dir")))
     layoutsDir = path.Clean(join(srcDir, baseEnv.get("layouts-dir")))
 
-    println("building index...")
+    printLog("building index...")
     buildIndex(srcDir, baseEnv)
 
     t := template.New("default").Funcs(funcMap)
-    println("loading includes", includesDir)
+    printLog("loading includes", includesDir)
     loadIncludes(t, includesDir)
-    println("loading layouts", layoutsDir)
+    printLog("loading layouts", layoutsDir)
     loadLayouts(t, layoutsDir)
-    println("building output...", layoutsDir)
+    printLog("building output...", layoutsDir)
     buildOutput(t, srcDir, destDir)
     println("** done.")
 }
@@ -104,6 +105,7 @@ func parseArgs() {
     flag.StringVar(&srcDir, "src", "", "source files")
     flag.StringVar(&destDir, "dest", "", "destination files")
     flag.BoolVar(&showHelp, "help", false, "show help")
+    flag.BoolVar(&verbose, "verbose", true, "show verbose output")
     flag.Parse()
 }
 
@@ -160,10 +162,10 @@ func buildIndex(path string, parentEnv Env) {
                 otherPath := otherEnv["path"]
                 log.Println("Duplicate id for paths", path, otherPath)
             }
-            println("adding", path, "to index, id =", id)
+            printLog("adding", path, "to index, id =", id)
             index[id] = env
         } else {
-            println("omitting", path, "from index (no id)")
+            printLog("omitting", path, "from index (no id)")
         }
     }
 }
@@ -213,15 +215,21 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
             s := readFile(srcPath)
             s = applyTemplate(t, s, env)
             s = applyLayout(t, s, env)
-            println("rendering", srcPath, "->", destPath)
+            printLog("rendering", srcPath, "->", destPath)
             err = ioutil.WriteFile(destPath, []byte(s), 0644)
         } else {
-            println("copying", srcPath, "->", destPath)
+            printLog("copying", srcPath, "->", destPath)
             err = util.CopyFile(destPath, srcPath)
         }
         return
     }
     filepath.Walk(srcDir, fn)
+}
+
+func printLog(args ...interface{}) {
+    if verbose {
+        fmt.Println(args...)
+    }
 }
 
 func isValidBuildDir(dir string) bool {
