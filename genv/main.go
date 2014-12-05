@@ -110,12 +110,22 @@ func ReadFile(path string) (s string) {
         return
     }
 
-    s = string(bytes)
-    i := strings.LastIndex(s, LINE_SEP)
+    lines := breakLines(string(bytes))
+    end := false
+    i := -1
+    for j, line := range lines {
+        if line == LINE_SEP {
+            if end {
+                i = j
+                break
+            } else {
+                end = true
+            }
+        }
+    }
+
     if i > 0 {
-        // Skip env block
-        i += len(LINE_SEP)+1
-        s = string(bytes[i:])
+        s = joinLines(lines[i+1:])
     }
     return
 }
