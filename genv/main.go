@@ -8,7 +8,7 @@ import (
     "strings"
     "log"
     "fmt"
-    "../util"
+    "github.com/nvlled/gost/util"
 )
 
 type T map[string]interface{}
