@@ -15,14 +15,15 @@ import (
     "./genv"
     "fmt"
     "flag"
+    "gopkg.in/fsnotify.v1"
 )
 
 const (
     MARKER_NAME = ".gost-build"
 )
 
-var index = make(genv.Index)
-var pathIndex = make(genv.Index)
+var index genv.Index
+var pathIndex genv.Index
 
 var includesDir = path.Clean(defaults.INCLUDES_DIR)
 var layoutsDir = path.Clean(defaults.LAYOUTS_DIR)
@@ -85,24 +86,50 @@ func main() {
         return
     }
 
-    env := genv.ReadDir(srcDir)
-    baseEnv = genv.Merge(env, baseEnv)
-    baseEnv.SetIndex(index)
+    run := func() {
+        index = make(genv.Index)
+        pathIndex = make(genv.Index)
+        env := genv.ReadDir(srcDir)
+        baseEnv = genv.Merge(env, baseEnv)
+        baseEnv.SetIndex(index)
 
-    includesDir = path.Clean(join(srcDir, baseEnv.Get("includes-dir")))
-    layoutsDir = path.Clean(join(srcDir, baseEnv.Get("layouts-dir")))
+        includesDir = path.Clean(join(srcDir, baseEnv.Get("includes-dir")))
+        layoutsDir = path.Clean(join(srcDir, baseEnv.Get("layouts-dir")))
 
-    printLog("building index...")
-    buildIndex(srcDir, baseEnv)
+        printLog("building index...")
+        buildIndex(srcDir, baseEnv)
 
-    t := template.New("default").Funcs(funcMap)
-    printLog("loading includes", includesDir)
-    loadIncludes(t, includesDir)
-    printLog("loading layouts", layoutsDir)
-    loadLayouts(t, layoutsDir)
-    printLog("building output...", layoutsDir)
-    buildOutput(t, srcDir, destDir)
-    println("** done.")
+        t := template.New("default").Funcs(funcMap)
+        printLog("loading includes", includesDir)
+        loadIncludes(t, includesDir)
+        printLog("loading layouts", layoutsDir)
+        loadLayouts(t, layoutsDir)
+        printLog("building output...", layoutsDir)
+        buildOutput(t, srcDir, destDir)
+        println("** done.")
+    }
+
+    run()
+
+    watcher, err := fsnotify.NewWatcher()
+    recursiveWatch(watcher, srcDir)
+    fail(err)
+    for {
+        select {
+        case <-watcher.Events:
+            println("-------------")
+            run()
+        }
+    }
+}
+
+func recursiveWatch(w *fsnotify.Watcher, dir string) {
+    filepath.Walk(srcDir, func(path string, info os.FileInfo, _ error) error {
+        if info.IsDir() {
+            w.Add(path)
+        }
+        return nil
+    })
 }
 
 func validateArgs() bool {
@@ -149,6 +176,7 @@ func isItemplate(path string) bool {
            ext == ".css"
 
 }
+
 func skipFile(file string) bool {
     base := filepath.Base(file)
     dir := filepath.Dir(file)
