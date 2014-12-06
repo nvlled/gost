@@ -21,10 +21,8 @@ const (
     MARKER_NAME = ".gost-build"
 )
 
-type Index map[string]genv.T
-
-var index = make(Index)
-var pathIndex = make(Index)
+var index = make(genv.Index)
+var pathIndex = make(genv.Index)
 
 var includesDir = path.Clean(defaults.INCLUDES_DIR)
 var layoutsDir = path.Clean(defaults.LAYOUTS_DIR)
@@ -89,6 +87,8 @@ func main() {
 
     env := genv.ReadDir(srcDir)
     baseEnv = genv.Merge(env, baseEnv)
+    baseEnv.SetIndex(index)
+
     includesDir = path.Clean(join(srcDir, baseEnv.Get("includes-dir")))
     layoutsDir = path.Clean(join(srcDir, baseEnv.Get("layouts-dir")))
 
