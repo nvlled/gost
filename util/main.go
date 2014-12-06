@@ -40,8 +40,8 @@ func Mkdir(path string) {
 
 func CommonSubPath(s1, s2 string) string {
     sep := string(filepath.Separator)
-    sub1 := strings.Split(s1, sep)
-    sub2 := strings.Split(s2, sep)
+    sub1 := strings.Split(filepath.Dir(s1), sep)
+    sub2 := strings.Split(filepath.Dir(s2), sep)
 
     var paths []string
     for i := 0; i < Min(len(sub1), len(sub2)); i++ {
