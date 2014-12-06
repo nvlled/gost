@@ -6,6 +6,8 @@ import (
     "io"
     "path/filepath"
     "strings"
+    "gopkg.in/fsnotify.v1"
+    "time"
 )
 
 func ReadDir(path string, filter func(string)bool) ([]string, error) {
@@ -90,4 +92,30 @@ func Times(s string, n int) (out []string) {
         out = append(out, s)
     }
     return
+}
+
+func Throttle(action func(), millis int) func() {
+    var update bool
+    go func() {
+            c := time.Tick(time.Duration(millis) * time.Millisecond)
+            for _ = range c {
+                if update {
+                    action()
+                    update = false
+                }
+            }
+    } ()
+
+    return func() {
+        update = true
+    }
+}
+
+func RecursiveWatch(w *fsnotify.Watcher, dir string) {
+    filepath.Walk(dir, func(path string, info os.FileInfo, _ error) error {
+        if info.IsDir() {
+            w.Add(path)
+        }
+        return nil
+    })
 }

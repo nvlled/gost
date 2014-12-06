@@ -112,24 +112,16 @@ func main() {
     run()
 
     watcher, err := fsnotify.NewWatcher()
-    recursiveWatch(watcher, srcDir)
+    util.RecursiveWatch(watcher, srcDir)
     fail(err)
+    run = util.Throttle(run, 900)
     for {
         select {
-        case <-watcher.Events:
-            println("-------------")
+        case e := <-watcher.Events:
+            println(">", e.String())
             run()
         }
     }
-}
-
-func recursiveWatch(w *fsnotify.Watcher, dir string) {
-    filepath.Walk(srcDir, func(path string, info os.FileInfo, _ error) error {
-        if info.IsDir() {
-            w.Add(path)
-        }
-        return nil
-    })
 }
 
 func validateArgs() bool {
