@@ -119,3 +119,11 @@ func RecursiveWatch(w *fsnotify.Watcher, dir string) {
         return nil
     })
 }
+
+func DirExists(path string) bool {
+    info, err := os.Lstat(path)
+    if err != nil {
+        return false
+    }
+    return info.IsDir()
+}

@@ -240,12 +240,19 @@ func applyLayout(t *template.Template, s string, env genv.T) string {
 }
 
 func loadIncludes(t *template.Template, dir string) {
-    t.ParseGlob(join(dir, "*.html"))
+    if !util.DirExists(dir) {
+        println("** includes-dir", dir, "not found")
+    } else {
+        t.ParseGlob(join(dir, "*.html"))
+    }
 }
 
 func loadLayouts(t *template.Template, dir string) {
-    _, err:= t.ParseGlob(join(dir, "*.html"))
-    fail(err)
+    if !util.DirExists(dir) {
+        println("** layouts-dir", dir, "not found")
+    } else {
+        t.ParseGlob(join(dir, "*.html"))
+    }
 }
 
 func buildOutput(t *template.Template, srcDir, destDir string) {
