@@ -35,8 +35,33 @@ var baseEnv = genv.T{
 }
 
 var funcMap = template.FuncMap{
-    "urlfor" : func(name string) string {
-        return "--------"
+    "absurl" : func(id string) string {
+        if env, ok := index[id]; ok {
+            return env.Get("path")
+        }
+        return "#"
+    },
+    "relurl" : func(curPath, id string) string {
+        if env, ok := index[id]; ok {
+            path := env.Get("path")
+            sep := string(filepath.Separator)
+            prefix := util.CommonSubPath(curPath, path)+sep
+
+            path = strings.TrimPrefix(path, prefix)
+            curPath = strings.TrimPrefix(curPath, prefix)
+
+            n := util.DirLevel(path)
+            m := util.DirLevel(curPath)
+
+            if m > n {
+                paths := util.Times("..", m - n)
+                paths = append(paths, path)
+                return join(paths...)
+            } else {
+                return path
+            }
+        }
+        return "#"
     },
     "with_env" : func(key, val string) []string {
         return nil
