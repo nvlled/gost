@@ -265,7 +265,8 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
             return
         }
 
-        destPath := join(destDir, srcPath)
+        s := strings.TrimPrefix(srcPath, srcDir)
+        destPath := join(destDir, s)
         util.Mkdir(filepath.Dir(destPath))
 
         if isItemplate(srcPath) {
