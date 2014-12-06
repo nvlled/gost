@@ -71,6 +71,7 @@ var srcDir string
 var destDir string
 var showHelp bool
 var verbose bool
+var watchSource bool
 
 func main() {
     defer errHandler()
@@ -111,15 +112,18 @@ func main() {
 
     run()
 
-    watcher, err := fsnotify.NewWatcher()
-    util.RecursiveWatch(watcher, srcDir)
-    fail(err)
-    run = util.Throttle(run, 900)
-    for {
-        select {
-        case e := <-watcher.Events:
-            println(">", e.String())
-            run()
+    if watchSource {
+        printLog("watching", srcDir)
+        watcher, err := fsnotify.NewWatcher()
+        util.RecursiveWatch(watcher, srcDir)
+        fail(err)
+        run = util.Throttle(run, 900)
+        for {
+            select {
+            case e := <-watcher.Events:
+                printLog(">", e.String())
+                run()
+            }
         }
     }
 }
@@ -151,6 +155,7 @@ func parseArgs() {
     flag.StringVar(&destDir, "dest", "", "destination files")
     flag.BoolVar(&showHelp, "help", false, "show help")
     flag.BoolVar(&verbose, "verbose", true, "show verbose output")
+    flag.BoolVar(&watchSource, "watch", false, "watch source directory")
     flag.Parse()
 }
 
