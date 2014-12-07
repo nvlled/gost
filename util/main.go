@@ -41,6 +41,9 @@ func Mkdir(path string) {
 
 
 func CommonSubPath(s1, s2 string) string {
+    if s1 == "" && s2 == "" {
+        return ""
+    }
     sep := string(filepath.Separator)
     sub1 := strings.Split(filepath.Dir(s1), sep)
     sub2 := strings.Split(filepath.Dir(s2), sep)
@@ -82,8 +85,8 @@ func Min(x, y int) int {
 }
 
 func DirLevel(path string) int {
-    dir := filepath.Dir(path)
-    paths := strings.SplitAfter(dir, string(filepath.Separator))
+    path = filepath.Clean(path)
+    paths := strings.SplitAfter(path, string(filepath.Separator))
     return len(paths)
 }
 
