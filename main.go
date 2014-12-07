@@ -116,9 +116,8 @@ func validateArgs() bool {
         fmt.Printf("destination directory required\n")
         return false
     }
-    if !isValidBuildDir(destDir) {
-        fmt.Printf("* %s is not a valid build directory. \n", destDir)
-        fmt.Printf("* Must be a non-existent directory or a previous build directory\n")
+    if srcDir == destDir {
+        fmt.Printf("source and destination must not be the same\n")
         return false
     }
     return true
@@ -238,9 +237,12 @@ func loadLayouts(t *template.Template, dir string) {
 }
 
 func buildOutput(t *template.Template, srcDir, destDir string) {
-    os.RemoveAll(destDir)
-    util.Mkdir(destDir)
-    writeMarker(destDir)
+    if isValidBuildDir(destDir) {
+        printLog("cleaning", destDir)
+        os.RemoveAll(destDir)
+        util.Mkdir(destDir)
+        writeMarker(destDir)
+    }
 
     fn := func(srcPath string, info os.FileInfo, _ error) (err error) {
         if skipFile(srcPath) || info.IsDir() {
