@@ -214,7 +214,13 @@ func applyLayout(t *template.Template, s string, env genv.T) string {
     if layout == "" {
         return s
     }
-    env["Contents"] = template.HTML(s)
+
+    contents := template.HTML(s)
+    env["Contents"] = contents
+    env["contents"] = contents
+    env["Body"] = contents
+    env["body"] = contents
+
     buf := new(bytes.Buffer)
     err := t.ExecuteTemplate(buf, layout, env); fail(err)
     return buf.String()
