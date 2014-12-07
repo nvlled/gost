@@ -98,16 +98,16 @@ func Read(path string) T {
     return Parse(joinLines(lines))
 }
 
-func ReadFile(path string) (s string) {
+func ReadFile(path string) string {
     file, err := os.Open(path)
     if err != nil {
         log.Println(err)
-        return
+        return ""
     }
     bytes, err := ioutil.ReadAll(file)
     if err != nil {
         log.Println(err)
-        return
+        return ""
     }
 
     lines := breakLines(string(bytes))
@@ -125,9 +125,9 @@ func ReadFile(path string) (s string) {
     }
 
     if i > 0 {
-        s = joinLines(lines[i+1:])
+        lines = lines[i+1:]
     }
-    return
+    return joinLines(lines)
 }
 
 func breakLines(s string) []string {
