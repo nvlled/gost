@@ -16,6 +16,7 @@ import (
     "fmt"
     "flag"
     "gopkg.in/fsnotify.v1"
+    "regexp"
 )
 
 const (
@@ -222,9 +223,17 @@ func buildIndex(path string, parentEnv genv.T) {
 }
 
 func applyTemplate(t *template.Template, s string, env genv.T) string {
-    path := env.Get("path")
+    curPath := env.Get("path")
     buf := new(bytes.Buffer)
-    template.Must(t.New(path).Parse(s)).Execute(buf, env)
+    funcs := template.FuncMap{
+        "url" : func(path string) string {
+            return genUrl(curPath, path)
+        },
+        "urlfor" : func(id string) string {
+            return urlFor(curPath, id)
+        },
+    }
+    template.Must(t.New(curPath).Funcs(funcs).Parse(s)).Execute(buf, env)
     return buf.String()
 }
 
@@ -283,6 +292,40 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
         return
     }
     filepath.Walk(srcDir, fn)
+}
+
+func genUrl(srcPath, destPath string) string {
+    re := regexp.MustCompile(`^/`)
+    if re.MatchString(destPath) {
+        return destPath
+    }
+    if re.MatchString(srcPath) {
+        return join(srcPath, destPath)
+    }
+
+    sep := string(filepath.Separator)
+    prefix := util.CommonSubPath(destPath, srcPath)+sep
+
+    srcPath_ := strings.TrimPrefix(srcPath, prefix)
+    destPath_ := strings.TrimPrefix(destPath, prefix)
+
+    dlevel := util.DirLevel(destPath_)
+    slevel := util.DirLevel(srcPath_)
+
+    if slevel >= dlevel {
+        paths := util.Times("..", slevel-1)
+        paths = append(paths, destPath_)
+        return join(paths...)
+    } else {
+        return destPath
+    }
+}
+
+func urlFor(curPath, id string)string {
+    if env, ok := index[id]; ok {
+        return genUrl(curPath, env.Get("path"))
+    }
+    return "#nope"
 }
 
 func printLog(args ...interface{}) {

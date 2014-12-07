@@ -42,32 +42,6 @@ func (env T) SetIndex(index Index) {
     env[INDEX_KEY] = index
 }
 
-func (env T) Url(id string) string {
-    curPath := env.Get("path")
-    index := env.Index()
-
-    if otherEnv, ok := index[id]; ok {
-        path := otherEnv.Get("path")
-        sep := string(filepath.Separator)
-        prefix := util.CommonSubPath(curPath, path)+sep
-
-        path = strings.TrimPrefix(path, prefix)
-        curPath = strings.TrimPrefix(curPath, prefix)
-
-        n := util.DirLevel(path)
-        m := util.DirLevel(curPath)
-
-        if m > n {
-            paths := util.Times("..", m - n)
-            paths = append(paths, path)
-            return join(paths...)
-        } else {
-            return path
-        }
-    }
-    return "#"
-}
-
 const (
     FILENAME = "env"
     SEP = ":"
