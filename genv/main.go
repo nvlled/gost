@@ -8,12 +8,9 @@ import (
     "strings"
     "log"
     "fmt"
-    "github.com/nvlled/gost/util"
 )
 
 type T map[string]interface{}
-
-type Index map[string]T
 
 func (env T) GetOk(k string) (string, bool) {
     v, ok := env[k]
@@ -31,22 +28,10 @@ func (env T) Get(k string) string {
     return v
 }
 
-func (env T) Index() Index {
-    switch t := env[INDEX_KEY].(type) {
-    case Index: return t
-    }
-    return make(Index)
-}
-
-func (env T) SetIndex(index Index) {
-    env[INDEX_KEY] = index
-}
-
 const (
     FILENAME = "env"
     SEP = ":"
     LINE_SEP = "-----"
-    INDEX_KEY = "__index"
 )
 
 func Merge(dest T, src T) T {
