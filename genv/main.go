@@ -31,7 +31,7 @@ func (env T) Get(k string) string {
 const (
     FILENAME = "env"
     SEP = ":"
-    LINE_SEP = "-----"
+    LINE_SEP = "----"
 )
 
 func Merge(dest T, src T) T {

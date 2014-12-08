@@ -140,3 +140,11 @@ func TestStringOp2(t *testing.T, data [][]string, fn func(string, string)string)
         }
     }
 }
+
+func AddTrailingSlash(path string) string {
+    if (path == "/") {
+        return path
+    }
+    sep := filepath.Separator
+    return filepath.Clean(path)+string(sep)
+}

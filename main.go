@@ -58,6 +58,9 @@ func main() {
         return
     }
 
+    srcDir = util.AddTrailingSlash(srcDir)
+    destDir = util.AddTrailingSlash(destDir)
+
     run := func() {
         index = make(Index)
         pathIndex = make(Index)
