@@ -176,7 +176,7 @@ func buildIndex(path string, parentEnv genv.T) {
             }
         }
     } else if isItemplate(path) {
-        env := genv.Read(path)
+        env := genv.ReadEnv(path)
         env = genv.Merge(env, parentEnv)
         env["path"] = strings.TrimPrefix(path, srcDir)
 
@@ -263,7 +263,7 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 
         env := pathIndex[srcPath]
         if isItemplate(srcPath) && !isVerbatim(env, s) {
-            s := genv.ReadFile(srcPath)
+            s := genv.ReadContents(srcPath)
             s = applyTemplate(t, s, env)
 
             if filepath.Ext(srcPath) == ".html" {

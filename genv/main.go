@@ -60,9 +60,7 @@ func Parse(s string) T {
     return env
 }
 
-func ReadDir(path string) T {
-    filename := filepath.Join(path, FILENAME)
-
+func ReadFile(filename string) T {
     file, err := os.Open(filename)
     if err != nil { return make(T) }
     bytes, err := ioutil.ReadAll(file)
@@ -71,7 +69,12 @@ func ReadDir(path string) T {
     return Parse(string(bytes))
 }
 
-func Read(path string) T {
+func ReadDir(dir string) T {
+    filename := filepath.Join(dir, FILENAME)
+    return ReadFile(filename)
+}
+
+func ReadEnv(path string) T {
     // TODO: reduce boilerplate
     file, err := os.Open(path)
     if err != nil { return make(T) }
@@ -87,7 +90,7 @@ func Read(path string) T {
     return Parse(joinLines(lines))
 }
 
-func ReadFile(path string) string {
+func ReadContents(path string) string {
     file, err := os.Open(path)
     if err != nil {
         log.Println(err)
