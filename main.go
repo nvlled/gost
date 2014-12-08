@@ -7,7 +7,7 @@ import (
     "path"
     "log"
     "strings"
-    "html/template"
+    "text/template"
     "io/ioutil"
     "bytes"
     "github.com/nvlled/gost/defaults"
@@ -215,11 +215,10 @@ func applyLayout(t *template.Template, s string, env genv.T) string {
         return s
     }
 
-    contents := template.HTML(s)
-    env["Contents"] = contents
-    env["contents"] = contents
-    env["Body"] = contents
-    env["body"] = contents
+    env["Contents"] = s
+    env["contents"] = s
+    env["Body"] = s
+    env["body"] = s
 
     buf := new(bytes.Buffer)
     err := t.ExecuteTemplate(buf, layout, env); fail(err)
