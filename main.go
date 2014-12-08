@@ -178,7 +178,7 @@ func buildIndex(path string, parentEnv genv.T) {
     } else if isItemplate(path) {
         env := genv.Read(path)
         env = genv.Merge(env, parentEnv)
-        env["path"] = path
+        env["path"] = strings.TrimPrefix(path, srcDir)
 
         pathIndex[path] = env
         if id, ok := env.GetOk("id"); ok {
