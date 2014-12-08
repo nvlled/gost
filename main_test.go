@@ -3,7 +3,7 @@ package main
 
 import (
     "testing"
-    "github.com/nvlled/gost/util"
+    "github.com/nvlled/gost/testutil"
 )
 
 func TestUrl(t *testing.T) {
@@ -22,5 +22,5 @@ func TestUrl(t *testing.T) {
         {"/abc",            "xyz",          "/abc/xyz"},
         {"xyz/efg/abc",     "xyz/123",      "../123"},
     }
-    util.TestStringOp2(t, testData, genUrl)
+    testutil.TestStringOp2(t, testData, genUrl)
 }

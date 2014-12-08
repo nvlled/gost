@@ -3,6 +3,7 @@ package util
 
 import (
     "testing"
+    "github.com/nvlled/gost/testutil"
 )
 
 func TestCommonSubPath(t *testing.T) {
@@ -15,7 +16,7 @@ func TestCommonSubPath(t *testing.T) {
         {"",                "",             ""},
         {"abc/ddd",         "xyz/efg",      ""},
     }
-    TestStringOp2(t, testData, CommonSubPath)
+    testutil.TestStringOp2(t, testData, CommonSubPath)
 }
 
 func TestDirLevel(t *testing.T) {
