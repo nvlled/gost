@@ -37,12 +37,6 @@ var baseEnv = genv.T{
     "layouts-dir" : defaults.LAYOUTS_DIR,
 }
 
-var funcMap = template.FuncMap{
-    "with_env" : func(key, val string) []string {
-        return nil
-    },
-}
-
 var srcDir string
 var destDir string
 var showHelp bool
@@ -77,7 +71,7 @@ func main() {
         printLog("building index...")
         buildIndex(srcDir, baseEnv)
 
-        t := template.New("default").Funcs(funcMap)
+        t := template.New("default").Funcs(createFuncMap("."))
         printLog("loading includes", includesDir)
         loadIncludes(t, includesDir)
         printLog("loading layouts", layoutsDir)
@@ -200,15 +194,9 @@ func buildIndex(path string, parentEnv genv.T) {
 func applyTemplate(t *template.Template, s string, env genv.T) string {
     curPath := env.Get("path")
     buf := new(bytes.Buffer)
-    funcs := template.FuncMap{
-        "url" : func(path string) string {
-            return genUrl(curPath, path)
-        },
-        "urlfor" : func(id string) string {
-            return urlFor(curPath, id)
-        },
-    }
-    template.Must(t.New(curPath).Funcs(funcs).Parse(s)).Execute(buf, env)
+    funcs := createFuncMap(curPath)
+    err := template.Must(t.New(curPath).Funcs(funcs).Parse(s)).Execute(buf, env)
+    fail(err)
     return buf.String()
 }
 
@@ -223,8 +211,11 @@ func applyLayout(t *template.Template, s string, env genv.T) string {
     env["Body"] = s
     env["body"] = s
 
+    curPath := env.Get("path")
     buf := new(bytes.Buffer)
-    err := t.ExecuteTemplate(buf, layout, env); fail(err)
+    funcs := createFuncMap(curPath)
+    err := t.New(curPath).Funcs(funcs).ExecuteTemplate(buf, layout, env)
+    fail(err)
     return buf.String()
 }
 
@@ -330,6 +321,17 @@ func isVerbatim(env genv.T, path string) bool {
         }
     }
     return false
+}
+
+func createFuncMap(curPath string) template.FuncMap {
+    return template.FuncMap{
+        "url" : func(path string) string {
+            return genUrl(curPath, path)
+        },
+        "urlfor" : func(id string) string {
+            return urlFor(curPath, id)
+        },
+    }
 }
 
 func printLog(args ...interface{}) {
