@@ -79,18 +79,7 @@ func Read(path string) T {
     if err != nil { return make(T) }
 
     lines := strings.Split(string(bytes), "\n")
-    start := -1
-    end   := -1
-    for i, line := range lines {
-        if line == LINE_SEP {
-            if start < 0 {
-                start = i+1
-            } else {
-                end = i
-                break
-            }
-        }
-    }
+    start, end := findEnvRange(lines)
     if start < 0 || end < 0 {
         return make(T)
     }
@@ -111,23 +100,31 @@ func ReadFile(path string) string {
     }
 
     lines := breakLines(string(bytes))
-    end := false
-    i := -1
-    for j, line := range lines {
-        if line == LINE_SEP {
-            if end {
-                i = j
-                break
-            } else {
-                end = true
-            }
-        }
-    }
-
-    if i > 0 {
-        lines = lines[i+1:]
+    _, end := findEnvRange(lines)
+    if end > 0 {
+        lines = lines[end+1:]
     }
     return joinLines(lines)
+}
+
+// includes indices of LINE_SEP
+func findEnvRange(lines []string) (int, int) {
+    i := 0
+    for j, line := range lines {
+        if strings.TrimSpace(line) != "" {
+            i = j
+            break
+        }
+    }
+    if lines[i] != LINE_SEP {
+        return -1, -1
+    }
+    for j, line := range lines[i+1:] {
+        if line == LINE_SEP {
+            return i, i+j+1
+        }
+    }
+    return -1, -1
 }
 
 func breakLines(s string) []string {
