@@ -21,6 +21,7 @@ import (
 
 const (
     MARKER_NAME = ".gost-build"
+    VERBATIM_KEY = "verbatim"
 )
 
 type Index map[string]genv.T
@@ -47,6 +48,7 @@ var destDir string
 var showHelp bool
 var verbose bool
 var watchSource bool
+var verbatimList []string
 
 func main() {
     defer errHandler()
@@ -70,6 +72,7 @@ func main() {
 
         includesDir = path.Clean(join(srcDir, baseEnv.Get("includes-dir")))
         layoutsDir = path.Clean(join(srcDir, baseEnv.Get("layouts-dir")))
+        verbatimList = strings.Fields(baseEnv.Get(VERBATIM_KEY))
 
         printLog("building index...")
         buildIndex(srcDir, baseEnv)
@@ -264,11 +267,15 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
         destPath := join(destDir, s)
         util.Mkdir(filepath.Dir(destPath))
 
-        if isItemplate(srcPath) {
-            env := pathIndex[srcPath]
+        env := pathIndex[srcPath]
+        if isItemplate(srcPath) && !isVerbatim(env, s) {
             s := genv.ReadFile(srcPath)
             s = applyTemplate(t, s, env)
-            s = applyLayout(t, s, env)
+
+            if filepath.Ext(srcPath) == ".html" {
+                s = applyLayout(t, s, env)
+            }
+
             printLog("rendering", srcPath, "->", destPath)
             err = ioutil.WriteFile(destPath, []byte(s), 0644)
         } else {
@@ -312,6 +319,17 @@ func urlFor(curPath, id string)string {
         return genUrl(curPath, env.Get("path"))
     }
     return "#nope"
+}
+
+func isVerbatim(env genv.T, path string) bool {
+    if env != nil {
+        for _, pref := range verbatimList {
+            if strings.HasPrefix(path, pref) {
+                return true
+            }
+        }
+    }
+    return false
 }
 
 func printLog(args ...interface{}) {
