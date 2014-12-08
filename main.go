@@ -230,7 +230,10 @@ func loadIncludes(t *template.Template, dir string) {
     if !util.DirExists(dir) {
         println("** includes-dir", dir, "not found")
     } else {
-        t.ParseGlob(join(dir, "*.html"))
+        _, err := t.ParseGlob(join(dir, "*.html"))
+        if err != nil {
+            panic(err)
+        }
     }
 }
 
@@ -238,7 +241,10 @@ func loadLayouts(t *template.Template, dir string) {
     if !util.DirExists(dir) {
         println("** layouts-dir", dir, "not found")
     } else {
-        t.ParseGlob(join(dir, "*.html"))
+        _, err := t.ParseGlob(join(dir, "*.html"))
+        if err != nil {
+            panic(err)
+        }
     }
 }
 
