@@ -39,6 +39,7 @@ var baseEnv = genv.T{
 
 var srcDir string
 var destDir string
+var buildFile string
 var showHelp bool
 var verbose bool
 var watchSource bool
@@ -49,11 +50,15 @@ func main() {
 
     parseArgs()
     prog := os.Args[0]
-    if len(os.Args) < 2 || showHelp {
+    if showHelp || (len(os.Args) < 2 && srcDir == "") {
         println(prog, "usage:")
         flag.PrintDefaults()
         return
     }
+    if buildFile != "" {
+        readBuildFile(buildFile)
+    }
+
     if !validateArgs() {
         return
     }
@@ -126,6 +131,7 @@ func validateArgs() bool {
 func parseArgs() {
     flag.StringVar(&srcDir, "src", "", "source files")
     flag.StringVar(&destDir, "dest", "", "destination files")
+    flag.StringVar(&buildFile, "build", "gost-build", "build file")
     flag.BoolVar(&showHelp, "help", false, "show help")
     flag.BoolVar(&verbose, "verbose", true, "show verbose output")
     flag.BoolVar(&watchSource, "watch", false, "watch source directory")
@@ -324,6 +330,17 @@ func isVerbatim(env genv.T, path string) bool {
         }
     }
     return false
+}
+
+func readBuildFile(path string) {
+    env := genv.ReadFile(path)
+    fmt.Printf("%v\n", env)
+    if srcDir == "" {
+        srcDir = env.Get("src")
+    }
+    if destDir == "" {
+        destDir = env.Get("dest")
+    }
 }
 
 func createFuncMap(curPath string) template.FuncMap {
