@@ -20,7 +20,8 @@ import (
 )
 
 const (
-    MARKER_NAME = ".gost-build"
+    // distdel: directory is safe to delete
+    MARKER_NAME = ".gost-distdel"
     VERBATIM_KEY = "verbatim"
 )
 
@@ -138,7 +139,7 @@ func validateArgs() bool {
 func parseArgs() {
     flag.StringVar(&srcDir, "src", "", "source files")
     flag.StringVar(&destDir, "dest", "", "destination files")
-    flag.StringVar(&buildFile, "build", "gost-build", "build file")
+    flag.StringVar(&buildFile, "build", "gostbuild", "build file")
     flag.BoolVar(&showHelp, "help", false, "show help")
     flag.BoolVar(&verbose, "verbose", true, "show verbose output")
     flag.BoolVar(&watchSource, "watch", false, "watch source directory")
@@ -343,7 +344,6 @@ func isVerbatim(env genv.T, path string) bool {
 
 func readBuildFile(path string) {
     env := genv.ReadFile(path)
-    fmt.Printf("%v\n", env)
     if srcDir == "" {
         srcDir = env.Get("src")
     }
