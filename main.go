@@ -46,7 +46,12 @@ var verbose bool
 var verbatimList []string
 
 func usage(prog string) {
-    println(prog, "usage:")
+    fmt.Printf("Usage: %s [options] action args...\n", prog)
+    println("actions:")
+    for name, _ := range actions {
+        println("  ", name)
+    }
+    println("options:")
     flag.PrintDefaults()
 }
 
