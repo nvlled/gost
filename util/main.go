@@ -138,3 +138,11 @@ func AddTrailingSlash(path string) string {
     sep := filepath.Separator
     return filepath.Clean(path)+string(sep)
 }
+
+func IsDirEmpty(dir string) bool {
+    names, err := ReadDir(dir, func(_ string)bool { return false })
+    if err != nil {
+        return false
+    }
+    return len(names) == 0
+}
