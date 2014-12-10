@@ -360,6 +360,16 @@ func createFuncMap(curPath string) template.FuncMap {
         "urlfor" : func(id string) string {
             return urlFor(curPath, id)
         },
+        "with_env" : func(key string, value interface{}) []interface{} {
+            var envs []interface{}
+            for _, env := range index {
+                v := env.Get(key)
+                if value == v {
+                    envs = append(envs, env)
+                }
+            }
+            return envs
+        },
     }
 }
 
