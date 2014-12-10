@@ -43,25 +43,47 @@ var destDir string
 var buildFile string
 var showHelp bool
 var verbose bool
-var watchSource bool
 var verbatimList []string
-var cleanBuildFiles bool
+
+func usage(prog string) {
+    println(prog, "usage:")
+    flag.PrintDefaults()
+}
+
+var actions = map[string]func(args []string) {
+    "build" : func(_ []string) {
+        runBuild()
+    },
+    "watch" : func(_ []string) {
+        runBuild()
+        printLog("watching", srcDir)
+        watcher, err := fsnotify.NewWatcher()
+        util.RecursiveWatch(watcher, srcDir)
+        fail(err)
+        rebuild := util.Throttle(runBuild, 900)
+        for {
+            select {
+            case e := <-watcher.Events:
+                printLog(">", e.String())
+                rebuild()
+            }
+        }
+    },
+    "clean" : func(_ []string) {
+        cleanBuildDir(srcDir, destDir)
+    },
+}
 
 func main() {
-    defer errHandler()
-
+    prog := os.Args[0]
     parseArgs()
     if buildFile != "" {
         readBuildFile(buildFile)
     }
-
-    prog := os.Args[0]
     if showHelp || (len(os.Args) < 2 && srcDir == "") {
-        println(prog, "usage:")
-        flag.PrintDefaults()
+        usage(prog)
         return
     }
-
     if !validateArgs() {
         return
     }
@@ -69,50 +91,46 @@ func main() {
     srcDir = util.AddTrailingSlash(srcDir)
     destDir = util.AddTrailingSlash(destDir)
 
-    if cleanBuildFiles {
-        cleanBuildDir(srcDir, destDir)
+    args := flag.Args()
+    if len(args) == 0 {
+        usage(prog)
         return
     }
 
-    run := func() {
-        index = make(Index)
-        pathIndex = make(Index)
-        env := genv.ReadDir(srcDir)
-        baseEnv = genv.Merge(env, baseEnv)
+    name := args[0]
+    args = args[1:]
+    action, ok := actions[name]
 
-        includesDir = path.Clean(join(srcDir, baseEnv.Get("includes-dir")))
-        layoutsDir = path.Clean(join(srcDir, baseEnv.Get("layouts-dir")))
-        verbatimList = strings.Fields(baseEnv.Get(VERBATIM_KEY))
-
-        printLog("building index...")
-        buildIndex(srcDir, baseEnv)
-
-        t := template.New("default").Funcs(createFuncMap("."))
-        printLog("loading includes", includesDir)
-        loadIncludes(t, includesDir)
-        printLog("loading layouts", layoutsDir)
-        loadLayouts(t, layoutsDir)
-        printLog("building output...", layoutsDir)
-        buildOutput(t, srcDir, destDir)
-        println("** done.")
+    if !ok {
+        println("unknown action:", name)
+    } else {
+        action(args)
     }
+}
 
-    run()
+func runBuild() {
+    defer errHandler()
 
-    if watchSource {
-        printLog("watching", srcDir)
-        watcher, err := fsnotify.NewWatcher()
-        util.RecursiveWatch(watcher, srcDir)
-        fail(err)
-        run = util.Throttle(run, 900)
-        for {
-            select {
-            case e := <-watcher.Events:
-                printLog(">", e.String())
-                run()
-            }
-        }
-    }
+    index = make(Index)
+    pathIndex = make(Index)
+    env := genv.ReadDir(srcDir)
+    baseEnv = genv.Merge(env, baseEnv)
+
+    includesDir = path.Clean(join(srcDir, baseEnv.Get("includes-dir")))
+    layoutsDir = path.Clean(join(srcDir, baseEnv.Get("layouts-dir")))
+    verbatimList = strings.Fields(baseEnv.Get(VERBATIM_KEY))
+
+    printLog("building index...")
+    buildIndex(srcDir, baseEnv)
+
+    t := template.New("default").Funcs(createFuncMap("."))
+    printLog("loading includes", includesDir)
+    loadIncludes(t, includesDir)
+    printLog("loading layouts", layoutsDir)
+    loadLayouts(t, layoutsDir)
+    printLog("building output...", layoutsDir)
+    buildOutput(t, srcDir, destDir)
+    println("** done.")
 }
 
 func validateArgs() bool {
@@ -142,8 +160,6 @@ func parseArgs() {
     flag.StringVar(&buildFile, "build", "gostbuild", "build file")
     flag.BoolVar(&showHelp, "help", false, "show help")
     flag.BoolVar(&verbose, "verbose", true, "show verbose output")
-    flag.BoolVar(&watchSource, "watch", false, "watch source directory")
-    flag.BoolVar(&cleanBuildFiles, "clean", false, "clean build dir")
     flag.Parse()
 }
 
