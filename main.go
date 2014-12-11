@@ -40,6 +40,7 @@ var baseEnv = genv.T{
 
 var globalFuncMap = template.FuncMap{
     "genid" : generateId,
+    "shell" : util.Exec,
 }
 
 var srcDir string

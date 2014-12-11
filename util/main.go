@@ -10,6 +10,9 @@ import (
     "time"
     "strconv"
     "math/rand"
+    "os/exec"
+    "fmt"
+    "bytes"
 )
 
 func ReadDir(path string, filter func(string)bool) ([]string, error) {
@@ -151,6 +154,17 @@ func IsDirEmpty(dir string) bool {
 
 func RandomString() string {
     return strconv.FormatInt(rand.Int63(), 36)
+}
+
+func Exec(name string, args ...string) string {
+    cmd :=exec.Command(name, args...)
+    var buf bytes.Buffer
+    cmd.Stdout = &buf
+    err := cmd.Run()
+    if err != nil {
+        return fmt.Sprintf("`%v`", err)
+    }
+    return strings.TrimSpace(buf.String())
 }
 
 func init() {
