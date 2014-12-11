@@ -170,6 +170,7 @@ func makeFile(path, title string) {
     }
 
     t := createTemplate()
+    t.Delims("[[", "]]")
     loadMakeTemplates(t, templDir)
 
     file, err := os.Create(fullpath)
