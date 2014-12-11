@@ -77,6 +77,20 @@ var actions = map[string]func(args []string) {
     "clean" : func(_ []string) {
         cleanBuildDir(srcDir, destDir)
     },
+    "make" : func(args []string) {
+        defer errHandler()
+        if len(args) == 0 {
+            println("missings args: make <path> [title]")
+            println("Note: path must be relative to source directory:", srcDir)
+            return
+        }
+        path := args[0]
+        var title string
+        if len(args) > 1 {
+            title = args[1]
+        }
+        makeFile(path, title)
+    },
 }
 
 func main() {
@@ -111,6 +125,53 @@ func main() {
     } else {
         action(args)
     }
+}
+
+func makeFile(path, title string) {
+    fullpath := join(srcDir, path)
+    fulldir := filepath.Dir(fullpath)
+
+    if _, err := os.Lstat(fullpath); err == nil {
+        println("file already exists:", fullpath)
+        return
+    }
+    if _, err := os.Lstat(fulldir); os.IsNotExist(err) {
+        println("directory does not exist:", fulldir)
+        return
+    }
+
+    env := make(genv.T)
+    for _, dir := range subDirList(srcDir, filepath.Dir(path)) {
+        parentEnv := genv.ReadDir(dir)
+        env = genv.Merge(env, parentEnv)
+    }
+    if title != "" {
+        env["title"] = title
+    }
+
+    templName := env.Get("template")
+    templDir := join(srcDir, env.Get("templates-dir"))
+
+    if templName == "" {
+        println("no template for file", fullpath)
+        println("add `template: the-template-name` in env")
+        return
+    }
+
+    t := template.New("default")
+    loadMakeTemplates(t, templDir)
+
+    file, err := os.Create(fullpath)
+    fail(err)
+    t = t.Lookup(templName)
+    if t == nil {
+        println("template not found:", templName)
+        return
+    }
+    printLog("using", "`"+templName+"`", "template from", templDir)
+    err = t.ExecuteTemplate(file, templName, env)
+    printLog("file created ->", fullpath)
+    fail(err)
 }
 
 func runBuild() {
@@ -434,6 +495,17 @@ func isValidBuildDir(dir string) bool {
     }
     _, err := os.Open(join(dir, MARKER_NAME))
     return err == nil
+}
+
+func subDirList(baseDir string, path string) []string {
+    sep := string(filepath.Separator)
+    dirs := strings.Split(path, sep)
+
+    result := []string{ baseDir }
+    for _, dir := range dirs {
+        result = append(result, join(baseDir, dir))
+    }
+    return result
 }
 
 func writeMarker(dir string) {
