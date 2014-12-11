@@ -8,6 +8,8 @@ import (
     "strings"
     "gopkg.in/fsnotify.v1"
     "time"
+    "strconv"
+    "math/rand"
 )
 
 func ReadDir(path string, filter func(string)bool) ([]string, error) {
@@ -145,4 +147,12 @@ func IsDirEmpty(dir string) bool {
         return false
     }
     return len(names) == 0
+}
+
+func RandomString() string {
+    return strconv.FormatInt(rand.Int63(), 36)
+}
+
+func init() {
+    rand.Seed(time.Now().UnixNano())
 }

@@ -38,6 +38,10 @@ var baseEnv = genv.T{
     "layouts-dir" : defaults.LAYOUTS_DIR,
 }
 
+var globalFuncMap = template.FuncMap{
+    "genid" : generateId,
+}
+
 var srcDir string
 var destDir string
 var buildFile string
@@ -158,7 +162,7 @@ func makeFile(path, title string) {
         return
     }
 
-    t := template.New("default")
+    t := createTemplate()
     loadMakeTemplates(t, templDir)
 
     file, err := os.Create(fullpath)
@@ -189,7 +193,7 @@ func runBuild() {
     printLog("building index...")
     buildIndex(srcDir, baseEnv)
 
-    t := template.New("default").Funcs(createFuncMap("."))
+    t := createTemplate()
     printLog("loading includes", includesDir)
     loadIncludes(t, includesDir)
     printLog("loading layouts", layoutsDir)
@@ -513,8 +517,21 @@ func writeMarker(dir string) {
     fail(err)
 }
 
+func generateId() string {
+    return util.RandomString()[:5]
+}
+
 func join(path ...string) string {
     return filepath.Join(path...)
+}
+
+func createTemplate() *template.Template {
+    funcMap := createFuncMap(".")
+    for k, v := range globalFuncMap {
+        funcMap[k] = v
+    }
+
+    return template.New("default").Funcs(funcMap)
 }
 
 func fail(err error) {
