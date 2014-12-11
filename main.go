@@ -136,10 +136,15 @@ func makeFile(path, title string) {
     fullpath := join(srcDir, path)
     fulldir := filepath.Dir(fullpath)
 
-    if _, err := os.Lstat(fullpath); err == nil {
-        println("file already exists:", fullpath)
+    if info, err := os.Lstat(fullpath); err == nil {
+        if info.IsDir() {
+            println("file is a directory:", fullpath)
+        } else {
+            println("file already exists:", fullpath)
+        }
         return
     }
+
     if _, err := os.Lstat(fulldir); os.IsNotExist(err) {
         println("directory does not exist:", fulldir)
         return
