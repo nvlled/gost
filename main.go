@@ -32,6 +32,7 @@ var pathIndex Index
 
 var includesDir = path.Clean(defaults.INCLUDES_DIR)
 var layoutsDir = path.Clean(defaults.LAYOUTS_DIR)
+var templatesDir = path.Clean(defaults.TEMPLATES_DIR)
 
 var baseEnv = genv.T{
     "includes-dir" : defaults.INCLUDES_DIR,
@@ -194,6 +195,7 @@ func runBuild() {
 
     includesDir = path.Clean(join(srcDir, baseEnv.Get("includes-dir")))
     layoutsDir = path.Clean(join(srcDir, baseEnv.Get("layouts-dir")))
+    templatesDir = path.Clean(join(srcDir, baseEnv.Get("templates-dir")))
     verbatimList = strings.Fields(baseEnv.Get(VERBATIM_KEY))
 
     printLog("building index...")
@@ -261,6 +263,7 @@ func skipFile(file string) bool {
         base == genv.FILENAME ||
         dir == includesDir ||
         dir == layoutsDir ||
+        dir == templatesDir ||
         base == MARKER_NAME
 }
 
