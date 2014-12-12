@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -32,7 +33,7 @@ func (env T) Get(k string) string {
 const (
 	FILENAME = "env"
 	SEP      = ":"
-	LINE_SEP = "----"
+	LINE_SEP = "---"
 )
 
 func Merge(dest T, src T) T {
@@ -128,11 +129,17 @@ func findEnvRange(lines []string) (int, int) {
 			break
 		}
 	}
-	if lines[i] != LINE_SEP {
+	var c string
+	if len(LINE_SEP) > 0 {
+		c = string(LINE_SEP[0])
+	}
+	re := regexp.MustCompile("^" + LINE_SEP + c + "*$")
+	if !re.MatchString(lines[i]) {
 		return -1, -1
 	}
+	lineSep := lines[i]
 	for j, line := range lines[i+1:] {
-		if line == LINE_SEP {
+		if line == lineSep {
 			return i, i + j + 1
 		}
 	}
