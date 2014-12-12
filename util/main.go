@@ -96,9 +96,8 @@ func Min(x, y int) int {
 }
 
 func DirLevel(path string) int {
-	path = filepath.Clean(path)
-	paths := strings.SplitAfter(path, string(filepath.Separator))
-	return len(paths)
+	path = filepath.Join("/", path)
+	return strings.Count(path, "/")
 }
 
 func Times(s string, n int) (out []string) {

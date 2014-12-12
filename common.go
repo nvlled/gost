@@ -146,11 +146,17 @@ func skipFile(file string) bool {
 
 func genUrl(srcPath, destPath string) string {
 	re := regexp.MustCompile(`^/`)
-	if re.MatchString(destPath) {
+	if srcPath == "/" {
+		if destPath == "/" {
+			return "."
+		}
+		return strings.TrimPrefix(destPath, "/")
+	}
+	if !re.MatchString(destPath) {
 		return destPath
 	}
-	if re.MatchString(srcPath) {
-		return join(srcPath, destPath)
+	if !re.MatchString(srcPath) {
+		srcPath = join("/", srcPath)
 	}
 
 	sep := string(filepath.Separator)
@@ -159,16 +165,17 @@ func genUrl(srcPath, destPath string) string {
 	srcPath_ := strings.TrimPrefix(srcPath, prefix)
 	destPath_ := strings.TrimPrefix(destPath, prefix)
 
-	dlevel := util.DirLevel(destPath_)
-	slevel := util.DirLevel(srcPath_)
+	slevel := util.DirLevel(srcPath_) - 1
 
-	if slevel >= dlevel {
-		paths := util.Times("..", slevel-1)
+	if slevel > 0 {
+		paths := util.Times("..", slevel)
 		paths = append(paths, destPath_)
 		return join(paths...)
-	} else {
-		return destPath
 	}
+	if destPath_ == "/" {
+		return "."
+	}
+	return strings.TrimPrefix(destPath_, "/")
 }
 
 func createFuncMap(curPath string) template.FuncMap {
