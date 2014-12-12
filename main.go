@@ -20,8 +20,11 @@ import (
 
 const (
 	// distdel: directory is safe to delete
-	MARKER_NAME  = ".gost-distdel"
-	VERBATIM_KEY = "verbatim"
+	MARKER_NAME       = ".gost-distdel"
+	VERBATIM_KEY      = "verbatim"
+	INCLUDES_DIR_KEY  = "includes-dir"
+	LAYOUTS_DIR_KEY   = "layouts-dir"
+	TEMPLATES_DIR_KEY = "templates-dir"
 )
 
 type Index map[string]genv.T
@@ -29,13 +32,14 @@ type Index map[string]genv.T
 var index Index
 var pathIndex Index
 
-var includesDir = path.Clean(defaults.INCLUDES_DIR)
-var layoutsDir = path.Clean(defaults.LAYOUTS_DIR)
-var templatesDir = path.Clean(defaults.TEMPLATES_DIR)
+var includesDir string
+var layoutsDir string
+var templatesDir string
 
 var baseEnv = genv.T{
-	"includes-dir": defaults.INCLUDES_DIR,
-	"layouts-dir":  defaults.LAYOUTS_DIR,
+	INCLUDES_DIR_KEY:  defaults.INCLUDES_DIR,
+	LAYOUTS_DIR_KEY:   defaults.LAYOUTS_DIR,
+	TEMPLATES_DIR_KEY: defaults.TEMPLATES_DIR,
 }
 
 var globalFuncMap = template.FuncMap{
@@ -193,9 +197,7 @@ func runBuild() {
 	env := genv.ReadDir(srcDir)
 	baseEnv = genv.Merge(env, baseEnv)
 
-	includesDir = path.Clean(join(srcDir, baseEnv.Get("includes-dir")))
-	layoutsDir = path.Clean(join(srcDir, baseEnv.Get("layouts-dir")))
-	templatesDir = path.Clean(join(srcDir, baseEnv.Get("templates-dir")))
+	initializeDirs(baseEnv)
 	verbatimList = strings.Fields(baseEnv.Get(VERBATIM_KEY))
 
 	printLog("building index...")
@@ -209,6 +211,18 @@ func runBuild() {
 	printLog("building output...", layoutsDir)
 	buildOutput(t, srcDir, destDir)
 	println("** done.")
+}
+
+func initializeDirs(env genv.T) {
+	prependSrc := func(dir string) string {
+		if dir != "" {
+			dir = path.Clean(join(srcDir, dir))
+		}
+		return dir
+	}
+	includesDir = prependSrc(env.Get(INCLUDES_DIR_KEY))
+	layoutsDir = prependSrc(env.Get(LAYOUTS_DIR_KEY))
+	templatesDir = prependSrc(env.Get(TEMPLATES_DIR_KEY))
 }
 
 func validateArgs() bool {
