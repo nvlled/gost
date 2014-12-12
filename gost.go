@@ -148,6 +148,10 @@ func cleanBuildDir(srcDir, destDir string) {
 	}
 	for _, dir := range dirs {
 		dir = join(destDir, dir)
+		if filepath.Clean(dir) == filepath.Clean(srcDir) {
+			println("** error: cannot clean source directory", srcDir, "...skipping")
+			continue
+		}
 		printLog("removing", dir)
 		os.RemoveAll(dir)
 	}
@@ -208,6 +212,12 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 		s := strings.TrimPrefix(srcPath, srcDir)
 		destPath := join(destDir, s)
 		util.Mkdir(filepath.Dir(destPath))
+
+		if strings.HasPrefix(destPath, srcDir) {
+			println("** warning, writing to source directory")
+			println("** skipping file:", destPath)
+			return
+		}
 
 		env := pathIndex[srcPath]
 		if isItemplate(srcPath) && !isVerbatim(env, s) {
