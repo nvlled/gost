@@ -3,7 +3,7 @@ gost
 
 A simple static site generator in Go using text/template in the stdlib
 
-## Installtion
+## Installation
     go get github.com/nvlled/gost
 
 ## Usage
