@@ -144,7 +144,7 @@ func skipFile(file string) bool {
 		base == MARKER_NAME
 }
 
-func genUrl(srcPath, destPath string) string {
+func relativizePath(srcPath, destPath string) string {
 	re := regexp.MustCompile(`^/`)
 	if srcPath == "/" {
 		if destPath == "/" {
@@ -181,11 +181,11 @@ func genUrl(srcPath, destPath string) string {
 func createFuncMap(curPath string) template.FuncMap {
 	return template.FuncMap{
 		"url": func(path string) string {
-			return genUrl(curPath, path)
+			return relativizePath(curPath, path)
 		},
 		"urlfor": func(id string) string {
 			if env, ok := index[id]; ok {
-				return genUrl(curPath, env.Get("path"))
+				return relativizePath(curPath, env.Get("path"))
 			}
 			return "#nope"
 		},
