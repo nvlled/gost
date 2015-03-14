@@ -69,6 +69,14 @@ func parseArgs() {
 }
 
 func validateArgs() bool {
+	if srcDir == "" {
+		fmt.Printf("source directory required\n")
+		return false
+	}
+	if destDir == "" {
+		fmt.Printf("destination directory required\n")
+		return false
+	}
 	info, err := os.Lstat(srcDir)
 	if err != nil {
 		fmt.Printf("failed to open directory: %s\n", srcDir)
@@ -76,10 +84,6 @@ func validateArgs() bool {
 	}
 	if !info.IsDir() {
 		fmt.Printf("%s is not a directory\n", srcDir)
-		return false
-	}
-	if destDir == "" {
-		fmt.Printf("destination directory required\n")
 		return false
 	}
 	if srcDir == destDir {
