@@ -201,7 +201,9 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 		printLog("cleaning", destDir)
 		os.RemoveAll(destDir)
 		util.Mkdir(destDir)
-		writeMarker(destDir)
+
+		_, err := os.Create(fpath.Join(destDir, MARKER_NAME))
+		fail(err)
 	}
 
 	fn := func(srcPath string, info os.FileInfo, _ error) (err error) {

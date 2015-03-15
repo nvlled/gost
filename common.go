@@ -5,7 +5,6 @@ import (
 	"github.com/nvlled/gost/defaults"
 	"github.com/nvlled/gost/genv"
 	"github.com/nvlled/gost/util"
-	"os"
 	fpath "path/filepath"
 	"regexp"
 	"strings"
@@ -68,9 +67,6 @@ func subDirList(baseDir string, path string) []string {
 	return result
 }
 
-func writeMarker(dir string) {
-	_, err := os.Create(fpath.Join(dir, MARKER_NAME))
-	fail(err)
 }
 
 func createTemplate() *template.Template {
