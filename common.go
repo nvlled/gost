@@ -6,7 +6,7 @@ import (
 	"github.com/nvlled/gost/genv"
 	"github.com/nvlled/gost/util"
 	"os"
-	"path/filepath"
+	fpath "path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
@@ -53,28 +53,24 @@ func isValidBuildDir(dir string) bool {
 			return true
 		}
 	}
-	_, err := os.Open(join(dir, MARKER_NAME))
+	_, err := os.Open(fpath.Join(dir, MARKER_NAME))
 	return err == nil
 }
 
 func subDirList(baseDir string, path string) []string {
-	sep := string(filepath.Separator)
+	sep := string(fpath.Separator)
 	dirs := strings.Split(path, sep)
 
 	result := []string{baseDir}
 	for _, dir := range dirs {
-		result = append(result, join(baseDir, dir))
+		result = append(result, fpath.Join(baseDir, dir))
 	}
 	return result
 }
 
 func writeMarker(dir string) {
-	_, err := os.Create(join(dir, MARKER_NAME))
+	_, err := os.Create(fpath.Join(dir, MARKER_NAME))
 	fail(err)
-}
-
-func join(path ...string) string {
-	return filepath.Join(path...)
 }
 
 func createTemplate() *template.Template {
@@ -107,7 +103,7 @@ func globTemplates(t *template.Template, key, dir string) {
 	if !util.DirExists(dir) {
 		println("**", key, dir, "not found")
 	} else if !util.IsDirEmpty(dir) {
-		_, err := t.ParseGlob(join(dir, "*.html"))
+		_, err := t.ParseGlob(fpath.Join(dir, "*.html"))
 		if err != nil {
 			panic(err)
 		}
@@ -122,7 +118,7 @@ func errHandler() {
 }
 
 func isItemplate(path string) bool {
-	ext := filepath.Ext(path)
+	ext := fpath.Ext(path)
 	return ext == ".html" ||
 		ext == ".js" ||
 		ext == ".css"
@@ -130,8 +126,8 @@ func isItemplate(path string) bool {
 }
 
 func skipFile(file string) bool {
-	base := filepath.Base(file)
-	dir := filepath.Dir(file)
+	base := fpath.Base(file)
+	dir := fpath.Dir(file)
 	return strings.HasPrefix(base, ".") || //exclude dot files
 		base == genv.FILENAME ||
 		dir == includesDir ||
@@ -152,10 +148,10 @@ func relativizePath(srcPath, destPath string) string {
 		return destPath
 	}
 	if !re.MatchString(srcPath) {
-		srcPath = join("/", srcPath)
+		srcPath = fpath.Join("/", srcPath)
 	}
 
-	sep := string(filepath.Separator)
+	sep := string(fpath.Separator)
 	prefix := util.CommonSubPath(destPath, srcPath) + sep
 
 	srcPath_ := strings.TrimPrefix(srcPath, prefix)
@@ -166,7 +162,7 @@ func relativizePath(srcPath, destPath string) string {
 	if slevel > 0 {
 		paths := util.Times("..", slevel)
 		paths = append(paths, destPath_)
-		return join(paths...)
+		return fpath.Join(paths...)
 	}
 	if destPath_ == "/" {
 		return "."

@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
-	"path/filepath"
+	fpath "path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -26,7 +26,7 @@ func ReadDir(path string, filter func(string) bool) ([]string, error) {
 
 	var names_ []string
 	for _, name := range names {
-		if !filter(filepath.Join(path, name)) {
+		if !filter(fpath.Join(path, name)) {
 			names_ = append(names_, name)
 		}
 	}
@@ -55,9 +55,9 @@ func CommonSubPath(s1, s2 string) string {
 	if s1 == "" && s2 == "" {
 		return ""
 	}
-	sep := string(filepath.Separator)
-	sub1 := strings.Split(filepath.Dir(s1), sep)
-	sub2 := strings.Split(filepath.Dir(s2), sep)
+	sep := string(fpath.Separator)
+	sub1 := strings.Split(fpath.Dir(s1), sep)
+	sub2 := strings.Split(fpath.Dir(s2), sep)
 
 	var paths []string
 	for i := 0; i < Min(len(sub1), len(sub2)); i++ {
@@ -96,7 +96,7 @@ func Min(x, y int) int {
 }
 
 func DirLevel(path string) int {
-	path = filepath.Join("/", path)
+	path = fpath.Join("/", path)
 	return strings.Count(path, "/")
 }
 
@@ -125,7 +125,7 @@ func Throttle(action func(), millis int) func() {
 }
 
 func RecursiveWatch(w *fsnotify.Watcher, dir string) {
-	filepath.Walk(dir, func(path string, info os.FileInfo, _ error) error {
+	fpath.Walk(dir, func(path string, info os.FileInfo, _ error) error {
 		if info.IsDir() {
 			w.Add(path)
 		}
@@ -145,8 +145,8 @@ func AddTrailingSlash(path string) string {
 	if path == "/" {
 		return path
 	}
-	sep := filepath.Separator
-	return filepath.Clean(path) + string(sep)
+	sep := fpath.Separator
+	return fpath.Clean(path) + string(sep)
 }
 
 func IsDirEmpty(dir string) bool {
@@ -173,7 +173,7 @@ func Exec(name string, args ...string) string {
 }
 
 func GenerateId() string {
-	return util.RandomString()[:5]
+	return RandomString()[:5]
 }
 
 func init() {

@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
+	fpath "path/filepath"
 	"regexp"
 	"strings"
 )
@@ -76,7 +76,7 @@ func ReadFile(filename string) T {
 }
 
 func ReadDir(dir string) T {
-	filename := filepath.Join(dir, FILENAME)
+	filename := fpath.Join(dir, FILENAME)
 	return ReadFile(filename)
 }
 
@@ -152,8 +152,4 @@ func breakLines(s string) []string {
 
 func joinLines(lines []string) string {
 	return strings.Join(lines, "\n")
-}
-
-func join(path ...string) string {
-	return filepath.Join(path...)
 }

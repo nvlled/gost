@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
-	"path/filepath"
+	fpath "path/filepath"
 	"strings"
 	"text/template"
 )
@@ -77,8 +77,8 @@ func runBuild() {
 }
 
 func makeFile(path, title string) {
-	fullpath := join(srcDir, path)
-	fulldir := filepath.Dir(fullpath)
+	fullpath := fpath.Join(srcDir, path)
+	fulldir := fpath.Dir(fullpath)
 
 	if info, err := os.Lstat(fullpath); err == nil {
 		if info.IsDir() {
@@ -95,7 +95,7 @@ func makeFile(path, title string) {
 	}
 
 	env := make(genv.T)
-	for _, dir := range subDirList(srcDir, filepath.Dir(path)) {
+	for _, dir := range subDirList(srcDir, fpath.Dir(path)) {
 		parentEnv := genv.ReadDir(dir)
 		env = genv.Merge(env, parentEnv)
 	}
@@ -104,7 +104,7 @@ func makeFile(path, title string) {
 	}
 
 	templName := env.Get("template")
-	templDir := join(srcDir, env.Get("templates-dir"))
+	templDir := fpath.Join(srcDir, env.Get("templates-dir"))
 
 	if templName == "" {
 		println("no template for file", fullpath)
@@ -137,7 +137,7 @@ func cleanBuildDir(srcDir, destDir string) {
 	}
 
 	dirs, err := util.ReadDir(destDir, func(path string) bool {
-		path = join(srcDir, strings.TrimPrefix(path, destDir))
+		path = fpath.Join(srcDir, strings.TrimPrefix(path, destDir))
 		if _, err := os.Lstat(path); err == nil {
 			return false
 		}
@@ -147,8 +147,8 @@ func cleanBuildDir(srcDir, destDir string) {
 		panic(err)
 	}
 	for _, dir := range dirs {
-		dir = join(destDir, dir)
-		if filepath.Clean(dir) == filepath.Clean(srcDir) {
+		dir = fpath.Join(destDir, dir)
+		if fpath.Clean(dir) == fpath.Clean(srcDir) {
 			println("** error: cannot clean source directory", srcDir, "...skipping")
 			continue
 		}
@@ -172,7 +172,7 @@ func buildIndex(path string, parentEnv genv.T) {
 			log.Println(err)
 		} else {
 			for _, name := range dirs {
-				subpath := join(path, name)
+				subpath := fpath.Join(path, name)
 				buildIndex(subpath, env)
 			}
 		}
@@ -180,7 +180,7 @@ func buildIndex(path string, parentEnv genv.T) {
 		env := genv.ReadEnv(path)
 		env = genv.Merge(env, parentEnv)
 		//env["path"] = strings.TrimPrefix(path, srcDir)
-		env["path"] = join("/", strings.TrimPrefix(path, srcDir))
+		env["path"] = fpath.Join("/", strings.TrimPrefix(path, srcDir))
 
 		pathIndex[path] = env
 		if id, ok := env.GetOk("id"); ok {
@@ -210,8 +210,8 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 		}
 
 		s := strings.TrimPrefix(srcPath, srcDir)
-		destPath := join(destDir, s)
-		util.Mkdir(filepath.Dir(destPath))
+		destPath := fpath.Join(destDir, s)
+		util.Mkdir(fpath.Dir(destPath))
 
 		if strings.HasPrefix(destPath, srcDir) {
 			println("** warning, writing to source directory")
@@ -224,7 +224,7 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 			s := genv.ReadContents(srcPath)
 			s = applyTemplate(t, s, env)
 
-			if filepath.Ext(srcPath) == ".html" {
+			if fpath.Ext(srcPath) == ".html" {
 				s = applyLayout(t, s, env)
 			}
 
@@ -236,13 +236,13 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 		}
 		return
 	}
-	filepath.Walk(srcDir, fn)
+	fpath.Walk(srcDir, fn)
 }
 
 func initializeDirs(env genv.T) {
 	prependSrc := func(dir string) string {
 		if dir != "" {
-			dir = path.Clean(join(srcDir, dir))
+			dir = path.Clean(fpath.Join(srcDir, dir))
 		}
 		return dir
 	}
