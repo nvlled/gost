@@ -172,6 +172,10 @@ func Exec(name string, args ...string) string {
 	return strings.TrimSpace(buf.String())
 }
 
+func GenerateId() string {
+	return util.RandomString()[:5]
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }

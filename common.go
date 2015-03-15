@@ -37,7 +37,7 @@ var baseEnv = genv.T{
 }
 
 var globalFuncMap = template.FuncMap{
-	"genid": generateId,
+	"genid": util.GenerateId,
 	"shell": util.Exec,
 }
 
@@ -71,10 +71,6 @@ func subDirList(baseDir string, path string) []string {
 func writeMarker(dir string) {
 	_, err := os.Create(join(dir, MARKER_NAME))
 	fail(err)
-}
-
-func generateId() string {
-	return util.RandomString()[:5]
 }
 
 func join(path ...string) string {
