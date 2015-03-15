@@ -93,6 +93,12 @@ func validateArgs() bool {
 	return true
 }
 
+func printLog(args ...interface{}) {
+	if verbose {
+		fmt.Println(args...)
+	}
+}
+
 func readBuildFile(path string) {
 	env := genv.ReadFile(path)
 	if srcDir == "" {
