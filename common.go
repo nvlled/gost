@@ -40,33 +40,13 @@ var globalFuncMap = template.FuncMap{
 	"shell": util.Exec,
 }
 
+	}
+}
+
 func printLog(args ...interface{}) {
 	if verbose {
 		fmt.Println(args...)
 	}
-}
-
-func isValidBuildDir(dir string) bool {
-	if _, err := os.Lstat(dir); err != nil {
-		if os.IsNotExist(err) {
-			return true
-		}
-	}
-	_, err := os.Open(fpath.Join(dir, MARKER_NAME))
-	return err == nil
-}
-
-func subDirList(baseDir string, path string) []string {
-	sep := string(fpath.Separator)
-	dirs := strings.Split(path, sep)
-
-	result := []string{baseDir}
-	for _, dir := range dirs {
-		result = append(result, fpath.Join(baseDir, dir))
-	}
-	return result
-}
-
 }
 
 func createTemplate() *template.Template {
@@ -78,12 +58,6 @@ func createTemplate() *template.Template {
 	return template.New("default").Funcs(funcMap)
 }
 
-func fail(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func isVerbatim(env genv.T, path string) bool {
 	if env != nil {
 		for _, pref := range verbatimList {
@@ -93,17 +67,6 @@ func isVerbatim(env genv.T, path string) bool {
 		}
 	}
 	return false
-}
-
-func globTemplates(t *template.Template, key, dir string) {
-	if !util.DirExists(dir) {
-		println("**", key, dir, "not found")
-	} else if !util.IsDirEmpty(dir) {
-		_, err := t.ParseGlob(fpath.Join(dir, "*.html"))
-		if err != nil {
-			panic(err)
-		}
-	}
 }
 
 func errHandler() {
