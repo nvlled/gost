@@ -8,7 +8,6 @@ import (
 	fpath "path/filepath"
 	"regexp"
 	"strings"
-	"text/template"
 )
 
 const (
@@ -35,27 +34,10 @@ var baseEnv = genv.T{
 	TEMPLATES_DIR_KEY: defaults.TEMPLATES_DIR,
 }
 
-var globalFuncMap = template.FuncMap{
-	"genid": util.GenerateId,
-	"shell": util.Exec,
-}
-
-	}
-}
-
 func printLog(args ...interface{}) {
 	if verbose {
 		fmt.Println(args...)
 	}
-}
-
-func createTemplate() *template.Template {
-	funcMap := createFuncMap(".")
-	for k, v := range globalFuncMap {
-		funcMap[k] = v
-	}
-
-	return template.New("default").Funcs(funcMap)
 }
 
 func isVerbatim(env genv.T, path string) bool {
@@ -127,28 +109,4 @@ func relativizePath(srcPath, destPath string) string {
 		return "."
 	}
 	return strings.TrimPrefix(destPath_, "/")
-}
-
-func createFuncMap(curPath string) template.FuncMap {
-	return template.FuncMap{
-		"url": func(path string) string {
-			return relativizePath(curPath, path)
-		},
-		"urlfor": func(id string) string {
-			if env, ok := index[id]; ok {
-				return relativizePath(curPath, env.Get("path"))
-			}
-			return "#nope"
-		},
-		"with_env": func(key string, value interface{}) []interface{} {
-			var envs []interface{}
-			for _, env := range index {
-				v := env.Get(key)
-				if value == v {
-					envs = append(envs, env)
-				}
-			}
-			return envs
-		},
-	}
 }

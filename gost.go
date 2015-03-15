@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"github.com/nvlled/gost/genv"
 	"github.com/nvlled/gost/util"
 	"gopkg.in/fsnotify.v1"
@@ -251,34 +250,6 @@ func initializeDirs(env genv.T) {
 	includesDir = prependSrc(env.Get(INCLUDES_DIR_KEY))
 	layoutsDir = prependSrc(env.Get(LAYOUTS_DIR_KEY))
 	templatesDir = prependSrc(env.Get(TEMPLATES_DIR_KEY))
-}
-
-func applyTemplate(t *template.Template, s string, env genv.T) string {
-	curPath := env.Get("path")
-	buf := new(bytes.Buffer)
-	funcs := createFuncMap(curPath)
-	err := template.Must(t.New(curPath).Funcs(funcs).Parse(s)).Execute(buf, env)
-	fail(err)
-	return buf.String()
-}
-
-func applyLayout(t *template.Template, s string, env genv.T) string {
-	layout := env.Get("layout")
-	if layout == "" {
-		return s
-	}
-
-	env["Contents"] = s
-	env["contents"] = s
-	env["Body"] = s
-	env["body"] = s
-
-	curPath := env.Get("path")
-	buf := new(bytes.Buffer)
-	funcs := createFuncMap(curPath)
-	err := t.New(curPath).Funcs(funcs).ExecuteTemplate(buf, layout, env)
-	fail(err)
-	return buf.String()
 }
 
 func loadIncludes(t *template.Template, dir string) {
