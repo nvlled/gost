@@ -51,7 +51,7 @@ func Merge(dest T, src T) T {
 
 func Parse(s string) T {
 	env := make(T)
-	for _, line := range breakLines(s) {
+	for _, line := range strings.Split(s, "\n") {
 		sub := strings.SplitN(line, SEP, 2)
 		if len(sub) == 2 {
 			k := strings.TrimSpace(sub[0])
@@ -97,7 +97,7 @@ func ReadEnv(path string) T {
 		return make(T)
 	}
 	lines = lines[start:end]
-	return Parse(joinLines(lines))
+	return Parse(strings.Join(lines, "\n"))
 }
 
 func ReadContents(path string) string {
@@ -112,12 +112,12 @@ func ReadContents(path string) string {
 		return ""
 	}
 
-	lines := breakLines(string(bytes))
+	lines := strings.Split(string(bytes), "\n")
 	_, end := findEnvRange(lines)
 	if end > 0 {
 		lines = lines[end+1:]
 	}
-	return joinLines(lines)
+	return strings.Join(lines, "\n")
 }
 
 // includes indices of LINE_SEP
@@ -144,12 +144,4 @@ func findEnvRange(lines []string) (int, int) {
 		}
 	}
 	return -1, -1
-}
-
-func breakLines(s string) []string {
-	return strings.Split(s, "\n")
-}
-
-func joinLines(lines []string) string {
-	return strings.Join(lines, "\n")
 }
