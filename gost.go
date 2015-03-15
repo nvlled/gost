@@ -67,9 +67,11 @@ func runBuild() {
 
 	t := createTemplate()
 	printLog("loading includes", includesDir)
-	loadIncludes(t, includesDir)
+	globTemplates(t, "includes-dir", includesDir)
+
 	printLog("loading layouts", layoutsDir)
-	loadLayouts(t, layoutsDir)
+	globTemplates(t, "layouts-dir", layoutsDir)
+
 	printLog("building output...", layoutsDir)
 	buildOutput(t, srcDir, destDir)
 	println("** done.")
@@ -113,7 +115,7 @@ func makeFile(path, title string) {
 
 	t := createTemplate()
 	t.Delims("[[", "]]")
-	loadMakeTemplates(t, templDir)
+	globTemplates(t, "templates-dir", templDir)
 
 	file, err := os.Create(fullpath)
 	fail(err)
@@ -250,16 +252,4 @@ func initializeDirs(env genv.T) {
 	includesDir = prependSrc(env.Get(INCLUDES_DIR_KEY))
 	layoutsDir = prependSrc(env.Get(LAYOUTS_DIR_KEY))
 	templatesDir = prependSrc(env.Get(TEMPLATES_DIR_KEY))
-}
-
-func loadIncludes(t *template.Template, dir string) {
-	globTemplates(t, "includes-dir", dir)
-}
-
-func loadLayouts(t *template.Template, dir string) {
-	globTemplates(t, "layouts-dir", dir)
-}
-
-func loadMakeTemplates(t *template.Template, dir string) {
-	globTemplates(t, "templates-dir", dir)
 }
