@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"github.com/nvlled/gost/defaults"
 	"github.com/nvlled/gost/genv"
-	"github.com/nvlled/gost/util"
 	fpath "path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -75,38 +73,4 @@ func skipFile(file string) bool {
 		dir == layoutsDir ||
 		dir == templatesDir ||
 		base == MARKER_NAME
-}
-
-func relativizePath(srcPath, destPath string) string {
-	re := regexp.MustCompile(`^/`)
-	if srcPath == "/" {
-		if destPath == "/" {
-			return "."
-		}
-		return strings.TrimPrefix(destPath, "/")
-	}
-	if !re.MatchString(destPath) {
-		return destPath
-	}
-	if !re.MatchString(srcPath) {
-		srcPath = fpath.Join("/", srcPath)
-	}
-
-	sep := string(fpath.Separator)
-	prefix := util.CommonSubPath(destPath, srcPath) + sep
-
-	srcPath_ := strings.TrimPrefix(srcPath, prefix)
-	destPath_ := strings.TrimPrefix(destPath, prefix)
-
-	slevel := util.DirLevel(srcPath_) - 1
-
-	if slevel > 0 {
-		paths := util.Times("..", slevel)
-		paths = append(paths, destPath_)
-		return fpath.Join(paths...)
-	}
-	if destPath_ == "/" {
-		return "."
-	}
-	return strings.TrimPrefix(destPath_, "/")
 }

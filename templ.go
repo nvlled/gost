@@ -15,11 +15,11 @@ var globalFuncMap = template.FuncMap{
 func createFuncMap(curPath string) template.FuncMap {
 	return template.FuncMap{
 		"url": func(path string) string {
-			return relativizePath(curPath, path)
+			return util.RelativizePath(curPath, path)
 		},
 		"urlfor": func(id string) string {
 			if env, ok := index[id]; ok {
-				return relativizePath(curPath, env.Get("path"))
+				return util.RelativizePath(curPath, env.Get("path"))
 			}
 			return "#nope"
 		},

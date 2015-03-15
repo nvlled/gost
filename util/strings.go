@@ -3,6 +3,7 @@ package util
 import (
 	"math/rand"
 	fpath "path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -52,4 +53,38 @@ func AddTrailingSlash(path string) string {
 
 func RandomString() string {
 	return strconv.FormatInt(rand.Int63(), 36)
+}
+
+func RelativizePath(srcPath, destPath string) string {
+	re := regexp.MustCompile(`^/`)
+	if srcPath == "/" {
+		if destPath == "/" {
+			return "."
+		}
+		return strings.TrimPrefix(destPath, "/")
+	}
+	if !re.MatchString(destPath) {
+		return destPath
+	}
+	if !re.MatchString(srcPath) {
+		srcPath = fpath.Join("/", srcPath)
+	}
+
+	sep := string(fpath.Separator)
+	prefix := CommonSubPath(destPath, srcPath) + sep
+
+	srcPath_ := strings.TrimPrefix(srcPath, prefix)
+	destPath_ := strings.TrimPrefix(destPath, prefix)
+
+	slevel := DirLevel(srcPath_) - 1
+
+	if slevel > 0 {
+		paths := Times("..", slevel)
+		paths = append(paths, destPath_)
+		return fpath.Join(paths...)
+	}
+	if destPath_ == "/" {
+		return "."
+	}
+	return strings.TrimPrefix(destPath_, "/")
 }
