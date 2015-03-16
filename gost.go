@@ -61,10 +61,10 @@ var actions = map[string]func(args []string){
 	"clean": func(_ []string) {
 		cleanBuildDir(srcDir, destDir)
 	},
-	"make": func(args []string) {
+	"newfile": func(args []string) {
 		defer errHandler()
 		if len(args) == 0 {
-			println("missings args: make <path> [title]")
+			println("missings args: newfile <path> [title]")
 			println("Note: path must be relative to source directory:", srcDir)
 			return
 		}
@@ -121,8 +121,8 @@ func makeFile(path, title string) {
 		return
 	}
 
-	env := make(genv.T)
-	for _, dir := range subDirList(srcDir, fpath.Dir(path)) {
+	env := baseEnv
+	for _, dir := range subDirList(srcDir, path) {
 		parentEnv := genv.ReadDir(dir)
 		env = genv.Merge(env, parentEnv)
 	}
@@ -131,7 +131,7 @@ func makeFile(path, title string) {
 	}
 
 	templName := env.Get("template")
-	templDir := fpath.Join(srcDir, env.Get("templates-dir"))
+	templDir := fpath.Join(srcDir, env.Get(TEMPLATES_DIR_KEY))
 
 	if templName == "" {
 		println("no template for file", fullpath)
@@ -143,13 +143,13 @@ func makeFile(path, title string) {
 	t.Delims("[[", "]]")
 	globTemplates(t, "templates-dir", templDir)
 
-	file, err := os.Create(fullpath)
-	fail(err)
 	t = t.Lookup(templName)
 	if t == nil {
 		println("template not found:", templName)
 		return
 	}
+	file, err := os.Create(fullpath)
+	fail(err)
 	printLog("using", "`"+templName+"`", "template from", templDir)
 	err = t.ExecuteTemplate(file, templName, env)
 	printLog("file created ->", fullpath)
