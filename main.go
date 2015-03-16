@@ -6,6 +6,7 @@ import (
 	"github.com/nvlled/gost/genv"
 	"github.com/nvlled/gost/util"
 	"os"
+	"path"
 )
 
 var srcDir string
@@ -28,8 +29,12 @@ func usage(prog string) {
 func main() {
 	prog := os.Args[0]
 	parseArgs()
+
 	if buildFile != "" {
-		readBuildFile(buildFile)
+		err := readBuildFile(buildFile)
+		if buildFile != "gostbuild" && err != nil {
+			println("Error reading buildfile: ", err.Error())
+		}
 	}
 	if showHelp || (len(os.Args) < 2 && srcDir == "") {
 		usage(prog)
@@ -62,7 +67,7 @@ func main() {
 func parseArgs() {
 	flag.StringVar(&srcDir, "src", "", "source files")
 	flag.StringVar(&destDir, "dest", "", "destination files")
-	flag.StringVar(&buildFile, "build", "gostbuild", "build file")
+	flag.StringVar(&buildFile, "buildFile", "gostbuild", "build file")
 	flag.BoolVar(&showHelp, "help", false, "show help")
 	flag.BoolVar(&verbose, "verbose", true, "show verbose output")
 	flag.Parse()
@@ -99,12 +104,17 @@ func printLog(args ...interface{}) {
 	}
 }
 
-func readBuildFile(path string) {
-	env := genv.ReadFile(path)
+func readBuildFile(filename string) error {
+	env, err := genv.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	cwd := path.Dir(buildFile)
 	if srcDir == "" {
-		srcDir = env.Get("src")
+		srcDir = path.Join(cwd, env.Get("src"))
 	}
 	if destDir == "" {
-		destDir = env.Get("dest")
+		destDir = path.Join(cwd, env.Get("dest"))
 	}
+	return nil
 }

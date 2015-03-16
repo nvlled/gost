@@ -62,22 +62,23 @@ func Parse(s string) T {
 	return env
 }
 
-func ReadFile(filename string) T {
+func ReadFile(filename string) (T, error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return make(T)
+		return make(T), err
 	}
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		return make(T)
+		return make(T), err
 	}
 
-	return Parse(string(bytes))
+	return Parse(string(bytes)), nil
 }
 
 func ReadDir(dir string) T {
 	filename := fpath.Join(dir, FILENAME)
-	return ReadFile(filename)
+	env, _ := ReadFile(filename)
+	return env
 }
 
 func ReadEnv(path string) T {
