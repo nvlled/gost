@@ -2,6 +2,7 @@ package util
 
 import (
 	"math/rand"
+	"path"
 	fpath "path/filepath"
 	"regexp"
 	"strconv"
@@ -87,4 +88,8 @@ func RelativizePath(srcPath, destPath string) string {
 		return "."
 	}
 	return strings.TrimPrefix(destPath_, "/")
+}
+
+func PrependPath(s, prefix string) string {
+	return path.Clean(fpath.Join(prefix, s))
 }
