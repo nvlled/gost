@@ -16,6 +16,19 @@ var showHelp bool
 var verbose bool
 var verbatimList []string
 
+var defaultOpts = func() *gostOpts {
+	emptyStr := ""
+	true_ := true
+	false_ := false
+	return &gostOpts{
+		srcDir:   &emptyStr,
+		destDir:  &emptyStr,
+		optsfile: &emptyStr,
+		help:     &false_,
+		verbose:  &true_,
+	}
+}()
+
 func usage(prog string) {
 	fmt.Printf("Usage: %s [options] action args...\n", prog)
 	println("actions:")
@@ -28,7 +41,31 @@ func usage(prog string) {
 
 func main() {
 	prog := os.Args[0]
-	parseArgs()
+
+	if len(os.Args) < 2 {
+		println("insufficient args")
+		return
+	}
+
+	fileOpts := new(gostOpts)
+	cliOpts := parseArgs(os.Args[1:])
+	if cliOpts.optsfile != nil {
+		opts, err := readOptsFile(*cliOpts.optsfile)
+		if err != nil {
+			println("*** failed to read optsfile")
+			println(err.Error())
+			return
+		}
+		fileOpts = opts
+	}
+	opts := defaultOpts.merge(fileOpts).merge(cliOpts)
+
+	println("srcDir: ", *opts.srcDir)
+	println("destDir: ", *opts.destDir)
+	println("help: ", *opts.help)
+	println("verbose: ", *opts.verbose)
+
+	return
 
 	if buildFile != "" {
 		err := readBuildFile(buildFile)
@@ -62,15 +99,6 @@ func main() {
 	} else {
 		action(args)
 	}
-}
-
-func parseArgs() {
-	flag.StringVar(&srcDir, "src", "", "source files")
-	flag.StringVar(&destDir, "dest", "", "destination files")
-	flag.StringVar(&buildFile, "buildFile", "gostbuild", "build file")
-	flag.BoolVar(&showHelp, "help", false, "show help")
-	flag.BoolVar(&verbose, "verbose", true, "show verbose output")
-	flag.Parse()
 }
 
 func validateArgs() bool {

@@ -12,6 +12,8 @@ import (
 
 type T map[string]interface{}
 
+func New() T { return make(T) }
+
 func (env T) GetOk(k string) (string, bool) {
 	v, ok := env[k]
 	if !ok {
@@ -28,6 +30,13 @@ func (env T) GetOk(k string) (string, bool) {
 func (env T) Get(k string) string {
 	v, _ := env.GetOk(k)
 	return v
+}
+
+func (env T) GetOr(k string, defValue string) string {
+	if val := env.Get(k); val != "" {
+		return val
+	}
+	return defValue
 }
 
 const (
@@ -81,6 +90,7 @@ func ReadDir(dir string) T {
 	return env
 }
 
+// expects two LINE_SEPs from a file
 func ReadEnv(path string) T {
 	// TODO: reduce boilerplate
 	file, err := os.Open(path)
