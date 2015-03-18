@@ -17,9 +17,9 @@ type gostOpts struct {
 	verbose  *bool
 }
 
-// Merges opts and opts_
-// Values in opts_ takes priority
-// No mutation is done in both given opts
+// * merges opts and opts_
+// * non-nil values in opts_ takes priority
+// * no mutation is done in both given opts
 func (opts *gostOpts) merge(opts_ *gostOpts) *gostOpts {
 	newOpts := *opts
 	if opts_.srcDir != nil {
@@ -40,7 +40,7 @@ func (opts *gostOpts) merge(opts_ *gostOpts) *gostOpts {
 	return &newOpts
 }
 
-func parseArgs(args []string) *gostOpts {
+func parseArgs(args []string) (*gostOpts, []string) {
 	flagSet := flag.NewFlagSet("flags", flag.ExitOnError)
 
 	// *** Note: default values are ignored ***
@@ -52,6 +52,7 @@ func parseArgs(args []string) *gostOpts {
 
 	flagSet.Parse(args)
 
+	// opts will have nil values for flags that are not set
 	opts := &gostOpts{}
 	flagSet.Visit(func(f *flag.Flag) {
 		switch f.Name {
@@ -67,8 +68,7 @@ func parseArgs(args []string) *gostOpts {
 			opts.verbose = verbose
 		}
 	})
-	// opts have nil values for flags that are not set
-	return opts
+	return opts, flagSet.Args()
 }
 
 func readOptsFile(filename string) (*gostOpts, error) {
@@ -81,5 +81,6 @@ func readOptsFile(filename string) (*gostOpts, error) {
 		return nil, err
 	}
 	args := strings.FieldsFunc(string(bytes), unicode.IsSpace)
-	return parseArgs(args), nil
+	opts, _ := parseArgs(args)
+	return opts, nil
 }
