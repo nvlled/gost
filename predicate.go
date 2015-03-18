@@ -9,7 +9,7 @@ type Vars func(string) string
 type predicate func(Vars, string) bool
 
 func isDotFile(_ Vars, path string) bool {
-	return strings.HasPrefix(path, ".")
+	return strings.HasPrefix(fpath.Base(path), ".")
 }
 
 func pathIs(path string) predicate {
