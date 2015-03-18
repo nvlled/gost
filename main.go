@@ -40,6 +40,8 @@ var defaultExcludesList = []predicate{
 	dirIsVar("templatesDir"),
 }
 
+var itemplates = []string{".html", ".js", ".css"}
+
 func usage(prog string) {
 	fmt.Printf("Usage: %s [options] action args...\n", prog)
 	println("actions:")

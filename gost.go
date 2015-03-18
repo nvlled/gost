@@ -271,8 +271,10 @@ func errHandler() {
 
 func isItemplate(path string) bool {
 	ext := fpath.Ext(path)
-	return ext == ".html" ||
-		ext == ".js" ||
-		ext == ".css"
-
+	for _, ext_ := range itemplates {
+		if ext == ext_ {
+			return true
+		}
+	}
+	return false
 }
