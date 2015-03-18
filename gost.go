@@ -16,11 +16,7 @@ import (
 
 const (
 	// distdel: directory is safe to delete
-	MARKER_NAME       = ".gost-distdel"
-	VERBATIM_KEY      = "verbatim"
-	INCLUDES_DIR_KEY  = "includes-dir"
-	LAYOUTS_DIR_KEY   = "layouts-dir"
-	TEMPLATES_DIR_KEY = "templates-dir"
+	MARKER_NAME = ".gost-distdel"
 )
 
 type Index map[string]genv.T
