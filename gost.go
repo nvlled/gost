@@ -2,14 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/nvlled/gost/defaults"
+	//"github.com/nvlled/gost/defaults"
 	"github.com/nvlled/gost/genv"
 	"github.com/nvlled/gost/util"
 	"gopkg.in/fsnotify.v1"
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	fpath "path/filepath"
 	"strings"
 	"text/template"
@@ -26,30 +25,23 @@ const (
 
 type Index map[string]genv.T
 
+// note: index is not actually used
 var index Index
 var pathIndex Index
 
-var includesDir string
-var layoutsDir string
-var templatesDir string
-
-var baseEnv = genv.T{
-	INCLUDES_DIR_KEY:  defaults.INCLUDES_DIR,
-	LAYOUTS_DIR_KEY:   defaults.LAYOUTS_DIR,
-	TEMPLATES_DIR_KEY: defaults.TEMPLATES_DIR,
-}
-
-var actions = map[string]func(args []string){
-	"build": func(_ []string) {
-		runBuild()
+var actions = map[string]func(*gostState, []string){
+	"build": func(state *gostState, _ []string) {
+		runBuild(state)
 	},
-	"watch": func(_ []string) {
-		runBuild()
+	"watch": func(state *gostState, _ []string) {
+		runBuild(state)
+		srcDir := state.srcDir
+
 		printLog("watching", srcDir)
 		watcher, err := fsnotify.NewWatcher()
 		util.RecursiveWatch(watcher, srcDir)
 		fail(err)
-		rebuild := util.Throttle(runBuild, 900)
+		rebuild := util.Throttle(func() { runBuild(state) }, 900)
 		for {
 			select {
 			case e := <-watcher.Events:
@@ -58,14 +50,14 @@ var actions = map[string]func(args []string){
 			}
 		}
 	},
-	"clean": func(_ []string) {
-		cleanBuildDir(srcDir, destDir)
+	"clean": func(state *gostState, _ []string) {
+		cleanBuildDir(state)
 	},
-	"newfile": func(args []string) {
+	"newfile": func(state *gostState, args []string) {
 		defer errHandler()
 		if len(args) == 0 {
 			println("missings args: newfile <path> [title]")
-			println("Note: path must be relative to source directory:", srcDir)
+			println("Note: path must be relative to source directory:", state.srcDir)
 			return
 		}
 		path := args[0]
@@ -73,37 +65,33 @@ var actions = map[string]func(args []string){
 		if len(args) > 1 {
 			title = args[1]
 		}
-		makeFile(path, title)
+		makeFile(state, path, title)
 	},
 }
 
-func runBuild() {
+func runBuild(state *gostState) {
 	defer errHandler()
 
 	index = make(Index)
 	pathIndex = make(Index)
-	env := genv.ReadDir(srcDir)
-	baseEnv = genv.Merge(env, baseEnv)
-
-	initializeDirs(baseEnv)
-	verbatimList = strings.Fields(baseEnv.Get(VERBATIM_KEY))
 
 	printLog("building index...")
-	buildIndex(srcDir, baseEnv)
+	buildIndex(state, state.srcDir, genv.New())
 
 	t := createTemplate()
-	printLog("loading includes", includesDir)
-	globTemplates(t, "includes-dir", includesDir)
+	printLog("loading includes", state.includesDir)
+	globTemplates(t, "includes-dir", state.includesDir)
 
-	printLog("loading layouts", layoutsDir)
-	globTemplates(t, "layouts-dir", layoutsDir)
+	printLog("loading layouts", state.layoutsDir)
+	globTemplates(t, "layouts-dir", state.layoutsDir)
 
-	printLog("building output...", layoutsDir)
-	buildOutput(t, srcDir, destDir)
+	printLog("building output...", state.layoutsDir)
+	buildOutput(state, t)
 	println("** done.")
 }
 
-func makeFile(path, title string) {
+func makeFile(state *gostState, path, title string) {
+	srcDir := state.srcDir
 	fullpath := fpath.Join(srcDir, path)
 	fulldir := fpath.Dir(fullpath)
 
@@ -121,7 +109,7 @@ func makeFile(path, title string) {
 		return
 	}
 
-	env := baseEnv
+	env := genv.New()
 	for _, dir := range subDirList(srcDir, path) {
 		parentEnv := genv.ReadDir(dir)
 		env = genv.Merge(env, parentEnv)
@@ -131,7 +119,7 @@ func makeFile(path, title string) {
 	}
 
 	templName := env.Get("template")
-	templDir := fpath.Join(srcDir, env.Get(TEMPLATES_DIR_KEY))
+	templDir := state.templatesDir
 
 	if templName == "" {
 		println("no template for file", fullpath)
@@ -156,7 +144,10 @@ func makeFile(path, title string) {
 	fail(err)
 }
 
-func cleanBuildDir(srcDir, destDir string) {
+func cleanBuildDir(state *gostState) {
+	srcDir := state.srcDir
+	destDir := state.destDir
+
 	if isValidBuildDir(destDir) {
 		printLog("cleaning", destDir)
 		os.RemoveAll(destDir)
@@ -184,29 +175,30 @@ func cleanBuildDir(srcDir, destDir string) {
 	}
 }
 
-func buildIndex(path string, parentEnv genv.T) {
+func buildIndex(state *gostState, path string, parentEnv genv.T) {
+	srcDir := state.srcDir
+
 	info, err := os.Lstat(path)
 	if err != nil {
 		log.Println(err)
 	} else if info.IsDir() {
-		// FIX: baseEnv is read twice
 		env := genv.ReadDir(path)
 		env = genv.Merge(env, parentEnv)
 
-		dirs, err := util.ReadDir(path, skipFile)
-
+		dirs, err := util.ReadDir(path, func(f string) bool {
+			return state.isFileExcluded(f)
+		})
 		if err != nil {
 			log.Println(err)
 		} else {
 			for _, name := range dirs {
 				subpath := fpath.Join(path, name)
-				buildIndex(subpath, env)
+				buildIndex(state, subpath, env)
 			}
 		}
 	} else if isItemplate(path) {
 		env := genv.ReadEnv(path)
 		env = genv.Merge(env, parentEnv)
-		//env["path"] = strings.TrimPrefix(path, srcDir)
 		env["path"] = fpath.Join("/", strings.TrimPrefix(path, srcDir))
 
 		pathIndex[path] = env
@@ -223,7 +215,9 @@ func buildIndex(path string, parentEnv genv.T) {
 	}
 }
 
-func buildOutput(t *template.Template, srcDir, destDir string) {
+func buildOutput(state *gostState, t *template.Template) {
+	srcDir := state.srcDir
+	destDir := state.destDir
 	if isValidBuildDir(destDir) {
 		printLog("cleaning", destDir)
 		os.RemoveAll(destDir)
@@ -234,7 +228,7 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 	}
 
 	fn := func(srcPath string, info os.FileInfo, _ error) (err error) {
-		if skipFile(srcPath) || info.IsDir() {
+		if state.isFileExcluded(srcPath) || info.IsDir() {
 			return
 		}
 
@@ -249,7 +243,7 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 		}
 
 		env := pathIndex[srcPath]
-		if isItemplate(srcPath) && !isVerbatim(env, s) {
+		if isItemplate(srcPath) && !state.isFileVerbatim(s) {
 			s := genv.ReadContents(srcPath)
 			s = applyTemplate(t, s, env)
 
@@ -268,29 +262,6 @@ func buildOutput(t *template.Template, srcDir, destDir string) {
 	fpath.Walk(srcDir, fn)
 }
 
-func initializeDirs(env genv.T) {
-	prependSrc := func(dir string) string {
-		if dir != "" {
-			dir = path.Clean(fpath.Join(srcDir, dir))
-		}
-		return dir
-	}
-	includesDir = prependSrc(env.Get(INCLUDES_DIR_KEY))
-	layoutsDir = prependSrc(env.Get(LAYOUTS_DIR_KEY))
-	templatesDir = prependSrc(env.Get(TEMPLATES_DIR_KEY))
-}
-
-func isVerbatim(env genv.T, path string) bool {
-	if env != nil {
-		for _, pref := range verbatimList {
-			if strings.HasPrefix(path, pref) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func errHandler() {
 	err := recover()
 	if err != nil {
@@ -304,15 +275,4 @@ func isItemplate(path string) bool {
 		ext == ".js" ||
 		ext == ".css"
 
-}
-
-func skipFile(file string) bool {
-	base := fpath.Base(file)
-	dir := fpath.Dir(file)
-	return strings.HasPrefix(base, ".") || //exclude dot files
-		base == genv.FILENAME ||
-		dir == includesDir ||
-		dir == layoutsDir ||
-		dir == templatesDir ||
-		base == MARKER_NAME
 }

@@ -7,15 +7,12 @@ import (
 	"github.com/nvlled/gost/util"
 	"os"
 	"path"
+	"strings"
 )
 
-var srcDir string
-var destDir string
-var buildFile string
-var showHelp bool
 var verbose bool
-var verbatimList []string
 
+// do not mutate directly: *defaultOpts.srcDir = "x"
 var defaultOpts = func() *gostOpts {
 	emptyStr := ""
 	true_ := true
@@ -29,6 +26,20 @@ var defaultOpts = func() *gostOpts {
 	}
 }()
 
+var defaultIncludesDir = "includes"
+var defaultLayoutsDir = "layouts"
+var defaultTemplatesDir = "templates"
+
+var defaultVerbatimList = []predicate{}
+var defaultExcludesList = []predicate{
+	isDotFile,
+	baseIs(MARKER_NAME),
+	baseIs(genv.FILENAME),
+	dirIsVar("includesDir"),
+	dirIsVar("layoutsDir"),
+	dirIsVar("templatesDir"),
+}
+
 func usage(prog string) {
 	fmt.Printf("Usage: %s [options] action args...\n", prog)
 	println("actions:")
@@ -39,17 +50,23 @@ func usage(prog string) {
 	flag.PrintDefaults()
 }
 
+func printLog(args ...interface{}) {
+	if verbose {
+		fmt.Println(args...)
+	}
+}
+
 func main() {
 	prog := os.Args[0]
 
-	if len(os.Args) < 2 {
-		println("insufficient args")
-		return
-	}
-
 	fileOpts := new(gostOpts)
-	cliOpts := parseArgs(os.Args[1:])
+	cliOpts, args := parseArgs(os.Args[1:])
+
+	// srcDir and destDir are relative to dir of optsfile
+	baseDir := ""
+
 	if cliOpts.optsfile != nil {
+		baseDir = path.Dir(*cliOpts.optsfile)
 		opts, err := readOptsFile(*cliOpts.optsfile)
 		if err != nil {
 			println("*** failed to read optsfile")
@@ -60,31 +77,24 @@ func main() {
 	}
 	opts := defaultOpts.merge(fileOpts).merge(cliOpts)
 
-	println("srcDir: ", *opts.srcDir)
-	println("destDir: ", *opts.destDir)
-	println("help: ", *opts.help)
-	println("verbose: ", *opts.verbose)
-
-	return
-
-	if buildFile != "" {
-		err := readBuildFile(buildFile)
-		if buildFile != "gostbuild" && err != nil {
-			println("Error reading buildfile: ", err.Error())
-		}
+	prependBase := func(dir string) *string {
+		var s string
+		s = util.PrependPath(dir, baseDir)
+		return &s
 	}
-	if showHelp || (len(os.Args) < 2 && srcDir == "") {
+	opts.srcDir = prependBase(*opts.srcDir)
+	opts.destDir = prependBase(*opts.destDir)
+
+	verbose = *opts.verbose
+	if *opts.help || (len(os.Args) < 2 && *opts.srcDir == "") {
 		usage(prog)
 		return
 	}
-	if !validateArgs() {
+	if !validateOpts(opts) {
 		return
 	}
+	state := optsToState(opts)
 
-	srcDir = util.AddTrailingSlash(srcDir)
-	destDir = util.AddTrailingSlash(destDir)
-
-	args := flag.Args()
 	if len(args) == 0 {
 		usage(prog)
 		return
@@ -97,11 +107,49 @@ func main() {
 	if !ok {
 		println("unknown action:", name)
 	} else {
-		action(args)
+		// pikachu elf is fake
+		action(state, args)
 	}
 }
 
-func validateArgs() bool {
+func optsToState(opts *gostOpts) *gostState {
+	env := genv.ReadDir(*opts.srcDir)
+
+	srcDir := util.AddTrailingSlash(*opts.srcDir)
+	destDir := util.AddTrailingSlash(*opts.destDir)
+	state := newState(srcDir, destDir)
+
+	state.setIncludesDir(env.GetOr("includes", defaultIncludesDir))
+	state.setLayoutsDir(env.GetOr("layouts", defaultLayoutsDir))
+	state.setTemplatesDir(env.GetOr("templates", defaultTemplatesDir))
+
+	fn := func(name string) []string {
+		paths := strings.Fields(env.Get(name))
+		for i := range paths {
+			paths[i] = util.PrependPath(paths[i], srcDir)
+		}
+		return paths
+	}
+	state.setVerbatimList(
+		append(
+			defaultVerbatimList,
+			predicateList(pathIs, fn("verbatim"))...,
+		),
+	)
+	state.setExcludeList(
+		append(
+			defaultExcludesList,
+			predicateList(pathIs, fn("excludes"))...,
+		),
+	)
+	return state
+}
+
+func validateOpts(opts *gostOpts) bool {
+	srcDir := *opts.srcDir
+	destDir := *opts.destDir
+
+	// Fix: both srcDir and destDir is set to "." by default
 	if srcDir == "" {
 		fmt.Printf("source directory required\n")
 		return false
@@ -124,25 +172,4 @@ func validateArgs() bool {
 		return false
 	}
 	return true
-}
-
-func printLog(args ...interface{}) {
-	if verbose {
-		fmt.Println(args...)
-	}
-}
-
-func readBuildFile(filename string) error {
-	env, err := genv.ReadFile(filename)
-	if err != nil {
-		return err
-	}
-	cwd := path.Dir(buildFile)
-	if srcDir == "" {
-		srcDir = path.Join(cwd, env.Get("src"))
-	}
-	if destDir == "" {
-		destDir = path.Join(cwd, env.Get("dest"))
-	}
-	return nil
 }
