@@ -1,12 +1,31 @@
 package main
 
 import (
+	"github.com/nvlled/gost/util"
 	fpath "path/filepath"
 	"strings"
 )
 
 type Vars func(string) string
 type predicate func(Vars, string) bool
+
+func (p predicate) apply(vars Vars) bool {
+	return p(vars, "")
+}
+
+var NoVars = func(_ string) string { return "" }
+
+func isSet(name string) predicate {
+	return func(vars Vars, _ string) bool {
+		return vars(name) != ""
+	}
+}
+
+func notEqual(s1, s2 string) predicate {
+	return func(vars Vars, _ string) bool {
+		return vars(s1) != vars(s2)
+	}
+}
 
 func isDotFile(_ Vars, path string) bool {
 	return strings.HasPrefix(fpath.Base(path), ".")
@@ -39,6 +58,12 @@ func dirIs(dir string) predicate {
 func dirIsVar(name string) predicate {
 	return func(vars Vars, path string) bool {
 		return fpath.Dir(path) == vars(name)
+	}
+}
+
+func dirExistsVar(name string) predicate {
+	return func(vars Vars, _ string) bool {
+		return util.DirExists(vars(name))
 	}
 }
 
