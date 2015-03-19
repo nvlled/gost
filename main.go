@@ -86,6 +86,10 @@ func main() {
 	opts := defaultOpts.merge(fileOpts).merge(cliOpts)
 
 	prependBase := func(dir string) *string {
+		if dir == "" {
+			// avoid returning "." when dir is ""
+			return &dir
+		}
 		var s string
 		s = util.PrependPath(dir, baseDir)
 		return &s
@@ -98,10 +102,6 @@ func main() {
 		usage(prog)
 		return
 	}
-	if !validateOpts(opts) {
-		return
-	}
-	state := optsToState(opts)
 
 	if len(args) == 0 {
 		usage(prog)
@@ -115,7 +115,8 @@ func main() {
 		println("unknown action:", name)
 	} else {
 		// pikachu elf is fake
-		action(state, args)
+		defer handleValidation()
+		action(opts, args)
 	}
 }
 
@@ -150,33 +151,4 @@ func optsToState(opts *gostOpts) *gostState {
 		),
 	)
 	return state
-}
-
-func validateOpts(opts *gostOpts) bool {
-	srcDir := *opts.srcDir
-	destDir := *opts.destDir
-
-	// Fix: both srcDir and destDir is set to "." by default
-	if srcDir == "" {
-		fmt.Printf("source directory required\n")
-		return false
-	}
-	if destDir == "" {
-		fmt.Printf("destination directory required\n")
-		return false
-	}
-	info, err := os.Lstat(srcDir)
-	if err != nil {
-		fmt.Printf("failed to open directory: %s\n", srcDir)
-		return false
-	}
-	if !info.IsDir() {
-		fmt.Printf("%s is not a directory\n", srcDir)
-		return false
-	}
-	if srcDir == destDir {
-		fmt.Printf("source and destination must not be the same\n")
-		return false
-	}
-	return true
 }

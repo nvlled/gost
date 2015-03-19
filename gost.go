@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	//"github.com/nvlled/gost/defaults"
+	"errors"
 	"github.com/nvlled/gost/genv"
 	"github.com/nvlled/gost/util"
 	"gopkg.in/fsnotify.v1"
@@ -25,11 +26,22 @@ type Index map[string]genv.T
 var index Index
 var pathIndex Index
 
-var actions = map[string]func(*gostState, []string){
-	"build": func(state *gostState, _ []string) {
+var srcDirSet = newValidator(isSet("srcDir"), "source directory required")
+var destDirSet = newValidator(isSet("destDir"), "destination directory required")
+var srcDirExists = newValidator(dirExistsVar("srcDir"), "source directory does not exists")
+var srcDestDiff = newValidator(notEqual("srcDir", "destDir"), "source and destination must be different")
+
+var fullCheck = []validator{srcDirSet, srcDirExists, destDirSet, srcDestDiff}
+
+var actions = map[string]func(*gostOpts, []string){
+	"build": func(opts *gostOpts, _ []string) {
+		validateOpts(opts, fullCheck...)
+		state := optsToState(opts)
 		runBuild(state)
 	},
-	"watch": func(state *gostState, _ []string) {
+	"watch": func(opts *gostOpts, _ []string) {
+		validateOpts(opts, fullCheck...)
+		state := optsToState(opts)
 		runBuild(state)
 		srcDir := state.srcDir
 
@@ -46,10 +58,14 @@ var actions = map[string]func(*gostState, []string){
 			}
 		}
 	},
-	"clean": func(state *gostState, _ []string) {
+	"clean": func(opts *gostOpts, _ []string) {
+		validateOpts(opts, fullCheck...)
+		state := optsToState(opts)
 		cleanBuildDir(state)
 	},
-	"newfile": func(state *gostState, args []string) {
+	"newfile": func(opts *gostOpts, args []string) {
+		validateOpts(opts, srcDirSet, srcDirExists)
+		state := optsToState(opts)
 		defer errHandler()
 		if len(args) < 2 {
 			println("missings args: " + args[0] + " <path> [title]")
