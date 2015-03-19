@@ -40,15 +40,14 @@ func (opts *gostOpts) merge(opts_ *gostOpts) *gostOpts {
 	return &newOpts
 }
 
-func parseArgs(args []string) (*gostOpts, []string) {
+func parseArgs(args []string, defaults *gostOpts) (*gostOpts, *flag.FlagSet) {
 	flagSet := flag.NewFlagSet("flags", flag.ExitOnError)
 
-	// *** Note: default values are ignored ***
-	srcDir := flagSet.String("srcDir", "", "source files")
-	destDir := flagSet.String("destDir", "", "destination files")
-	optsfile := flagSet.String("optsfile", "", "build file")
-	help := flagSet.Bool("help", false, "show help")
-	verbose := flagSet.Bool("verbose", false, "show verbose output")
+	srcDir := flagSet.String("srcDir", *defaults.srcDir, "source files")
+	destDir := flagSet.String("destDir", *defaults.destDir, "destination files")
+	optsfile := flagSet.String("optsfile", *defaults.optsfile, "build file")
+	help := flagSet.Bool("help", *defaults.help, "show help")
+	verbose := flagSet.Bool("verbose", *defaults.verbose, "show verbose output")
 
 	flagSet.Parse(args)
 
@@ -68,10 +67,10 @@ func parseArgs(args []string) (*gostOpts, []string) {
 			opts.verbose = verbose
 		}
 	})
-	return opts, flagSet.Args()
+	return opts, flagSet
 }
 
-func readOptsFile(filename string) (*gostOpts, error) {
+func readOptsFile(filename string, defaultOpts *gostOpts) (*gostOpts, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -81,6 +80,6 @@ func readOptsFile(filename string) (*gostOpts, error) {
 		return nil, err
 	}
 	args := strings.FieldsFunc(string(bytes), unicode.IsSpace)
-	opts, _ := parseArgs(args)
+	opts, _ := parseArgs(args, defaultOpts)
 	return opts, nil
 }

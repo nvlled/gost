@@ -43,14 +43,14 @@ var defaultExcludesList = []predicate{
 
 var itemplates = []string{".html", ".js", ".css"}
 
-func usage(prog string) {
+func usage(prog string, flagSet *flag.FlagSet) {
 	fmt.Printf("Usage: %s [options] action args...\n", prog)
 	println("actions:")
 	for name, _ := range actions {
 		println("  ", name)
 	}
 	println("options:")
-	flag.PrintDefaults()
+	flagSet.PrintDefaults()
 }
 
 func printLog(args ...interface{}) {
@@ -63,14 +63,14 @@ func main() {
 	prog := os.Args[0]
 
 	fileOpts := new(gostOpts)
-	cliOpts, args := parseArgs(os.Args[1:])
+	cliOpts, flagSet := parseArgs(os.Args[1:], defaultOpts)
 
 	// srcDir and destDir are relative to dir of optsfile
 	baseDir := "."
 
 	if cliOpts.optsfile != nil {
 		baseDir = path.Dir(*cliOpts.optsfile)
-		opts, err := readOptsFile(*cliOpts.optsfile)
+		opts, err := readOptsFile(*cliOpts.optsfile, defaultOpts)
 		if err != nil {
 			println("*** failed to read optsfile")
 			println(err.Error())
@@ -78,7 +78,7 @@ func main() {
 		}
 		fileOpts = opts
 	} else {
-		opts, err := readOptsFile(*defaultOpts.optsfile)
+		opts, err := readOptsFile(*defaultOpts.optsfile, defaultOpts)
 		if err == nil {
 			fileOpts = opts
 		}
@@ -99,12 +99,13 @@ func main() {
 
 	verbose = *opts.verbose
 	if *opts.help || (len(os.Args) < 2 && *opts.srcDir == "") {
-		usage(prog)
+		usage(prog, flagSet)
 		return
 	}
 
+	args := flagSet.Args()
 	if len(args) == 0 {
-		usage(prog)
+		usage(prog, flagSet)
 		return
 	}
 
