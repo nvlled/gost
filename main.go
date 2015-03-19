@@ -114,7 +114,6 @@ func main() {
 	if !ok {
 		println("unknown action:", name)
 	} else {
-		// pikachu elf is fake
 		defer handleValidation()
 		action(opts, args)
 	}
@@ -133,21 +132,19 @@ func optsToState(opts *gostOpts) *gostState {
 
 	fn := func(name string) []string {
 		paths := strings.Fields(env.Get(name))
-		for i := range paths {
-			paths[i] = util.PrependPath(paths[i], srcDir)
-		}
+		// paths are relative to srcDir
 		return paths
 	}
 	state.setVerbatimList(
 		append(
 			defaultVerbatimList,
-			predicateList(pathIs, fn("verbatim"))...,
+			predicateList(subPathIs, fn("verbatim"))...,
 		),
 	)
 	state.setExcludeList(
 		append(
 			defaultExcludesList,
-			predicateList(pathIs, fn("excludes"))...,
+			predicateList(subPathIs, fn("excludes"))...,
 		),
 	)
 	return state

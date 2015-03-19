@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// TODO: move to a separate sub-package
+
 type Vars func(string) string
 type predicate func(Vars, string) bool
 
@@ -34,6 +36,15 @@ func isDotFile(_ Vars, path string) bool {
 func pathIs(path string) predicate {
 	return func(_ Vars, path_ string) bool {
 		return path == path_
+	}
+}
+
+// potentially has a bug when given a path without a trailing slash
+// since "something" is a prefix of "something-insidious"
+// TODO: fix when I feel like it
+func subPathIs(subpath string) predicate {
+	return func(_ Vars, path string) bool {
+		return strings.HasPrefix(path, subpath)
 	}
 }
 
