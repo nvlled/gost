@@ -46,7 +46,7 @@ func parseArgs(args []string) (*gostOpts, []string) {
 	// *** Note: default values are ignored ***
 	srcDir := flagSet.String("srcDir", "", "source files")
 	destDir := flagSet.String("destDir", "", "destination files")
-	optsfile := flagSet.String("optsfile", "gostbuild", "build file")
+	optsfile := flagSet.String("optsfile", "", "build file")
 	help := flagSet.Bool("help", false, "show help")
 	verbose := flagSet.Bool("verbose", false, "show verbose output")
 

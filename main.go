@@ -11,6 +11,7 @@ import (
 )
 
 var verbose bool
+var defaultOptsfile = "gostopts"
 
 // do not mutate directly: *defaultOpts.srcDir = "x"
 var defaultOpts = func() *gostOpts {
@@ -20,7 +21,7 @@ var defaultOpts = func() *gostOpts {
 	return &gostOpts{
 		srcDir:   &emptyStr,
 		destDir:  &emptyStr,
-		optsfile: &emptyStr,
+		optsfile: &defaultOptsfile,
 		help:     &false_,
 		verbose:  &true_,
 	}
@@ -65,7 +66,7 @@ func main() {
 	cliOpts, args := parseArgs(os.Args[1:])
 
 	// srcDir and destDir are relative to dir of optsfile
-	baseDir := ""
+	baseDir := "."
 
 	if cliOpts.optsfile != nil {
 		baseDir = path.Dir(*cliOpts.optsfile)
@@ -76,6 +77,11 @@ func main() {
 			return
 		}
 		fileOpts = opts
+	} else {
+		opts, err := readOptsFile(*defaultOpts.optsfile)
+		if err == nil {
+			fileOpts = opts
+		}
 	}
 	opts := defaultOpts.merge(fileOpts).merge(cliOpts)
 
