@@ -15,6 +15,8 @@ import (
 	"text/template"
 )
 
+// TODO: change all / to os.PathSeparator
+
 const (
 	// distdel: directory is safe to delete
 	MARKER_NAME = ".gost-distdel"
@@ -34,6 +36,21 @@ var srcDestDiff = newValidator(notEqual("srcDir", "destDir"), "source and destin
 var fullCheck = []validator{srcDirSet, srcDirExists, destDirSet, srcDestDiff}
 
 var actions = map[string]func(*gostOpts, []string){
+	"new": func(_ *gostOpts, args []string) {
+		if len(args) < 2 {
+			fmt.Printf("missing args: %s <name>\n", args[0])
+			return
+		}
+		dirname := args[1]
+		if util.DirExists(dirname) {
+			println("directory already exists: ", dirname)
+			return
+		}
+		err := newSampleProject(dirname)
+		if err != nil {
+			fmt.Printf("New project creation failed, %s", err)
+		}
+	},
 	"build": func(opts *gostOpts, _ []string) {
 		validateOpts(opts, fullCheck...)
 		state := optsToState(opts)
@@ -246,6 +263,11 @@ func buildOutput(state *gostState, t *template.Template) {
 
 		s := strings.TrimPrefix(srcPath, srcDir)
 		destPath := fpath.Join(destDir, s)
+
+		if state.isFileExcluded(s) {
+			printLog("*** skipping excluded file: " + s)
+			return
+		}
 		util.Mkdir(fpath.Dir(destPath))
 
 		if strings.HasPrefix(destPath, srcDir) {
@@ -289,4 +311,143 @@ func isItemplate(path string) bool {
 		}
 	}
 	return false
+}
+
+func newSampleProject(dirname string) error {
+	join := fpath.Join
+	srcDir := "src"
+	destDir := "build"
+	layoutFile := "default.html"
+	templateFile := "article.html"
+
+	if util.DirExists(dirname) {
+		return errors.New("directory already exists: " + dirname)
+	}
+	printLog("*** creating project " + dirname)
+
+	mkdir := func(path string) {
+		printLog("create dir:  ", path)
+		util.Mkdir(path)
+	}
+	createFile := func(path, contents string) {
+		path = join(dirname, path)
+		printLog("create file: ", path)
+		util.CreateFile(path, contents)
+	}
+
+	mkdir(dirname)
+	mkdir(join(dirname, "build"))
+	mkdir(join(dirname, srcDir))
+	mkdir(join(dirname, srcDir, defaultIncludesDir))
+	mkdir(join(dirname, srcDir, defaultLayoutsDir))
+	mkdir(join(dirname, srcDir, defaultTemplatesDir))
+	mkdir(join(dirname, srcDir, "articles"))
+	mkdir(join(dirname, srcDir, "sample-files"))
+	mkdir(join(dirname, srcDir, "trash"))
+
+	createFile(defaultOptsfile, fmt.Sprintf(`
+--srcDir %s
+--destDir %s`, srcDir, destDir))
+
+	createFile(join(srcDir, genv.FILENAME), fmt.Sprintf(`
+layout: %s
+sitename: %s
+verbatim: sample-files/
+excludes: trash/
+`, layoutFile, dirname))
+
+	createFile(join(srcDir, "articles", genv.FILENAME), fmt.Sprintf(`
+template: %s
+category: article`, templateFile))
+
+	createFile(join(srcDir, defaultLayoutsDir, layoutFile), fmt.Sprintf(`
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>{{with .title}}{{.}} - {{end}}{{.sitename}}</title>
+</head>
+<body>
+<div id="wrapper">
+	<a href='{{urlfor "home"}}'>home</a>
+	<h2>{{.title}}</h2>
+	{{.contents}}
+</div>
+</body>
+</html>`))
+
+	createFile(join(srcDir, defaultLayoutsDir, "other.html"), fmt.Sprintf(`
+<html lang="en">
+<body>
+<div id="sidebar">
+	<a href='{{urlfor "home"}}'>home</a>
+	<a href='{{urlfor "hello"}}'>hello</a>
+</div>
+<div id="contents">
+	{{.contents}}
+</div>
+<div id="footer">fock semantic tags</div>
+</body>
+</html>`))
+
+	createFile(join(srcDir, defaultIncludesDir, "includes.html"), fmt.Sprintf(`
+{{define "emphasize"}}
+<em><blink>__{{.}}__</blink><em>
+{{end}}
+`))
+
+	createFile(join(srcDir, "index.html"), fmt.Sprintf(`
+-------------------------
+id: home
+title: Welcome
+-------------------------
+
+<p>This is the home page</p>
+
+<h3>articles</h3>
+<ul>
+{{range (with_env "category" "article")}}
+	<li><a href="{{.path}}">{{.title}}</a></li>
+{{end}}
+</ul>`))
+
+	createFile(join(srcDir, defaultTemplatesDir, templateFile), fmt.Sprintf(`
+----------------------
+id: [[genid]]
+title: [[.title]]
+date: [[shell "date"]]
+----------------------
+
+<p>pikachu elf is fake</p>`))
+
+	createFile(join(srcDir, "articles", "hello.html"), fmt.Sprintf(`
+--------
+id: hello
+title: Title is hello
+--------
+
+<p>Hello, this is a greeting with no intrinsic value
+See the other equally-useless <a href='{{urlfor "sample"}}'>article</a>
+{{template "emphasize" "u sock"}}
+</p>`))
+
+	createFile(join(srcDir, "articles", "sample.html"), fmt.Sprintf(`
+--------
+id: sample
+title: A title
+layout: other.html
+--------
+
+<p>A sample page with sample links</a>
+<a href="sample-files/verbatim.html">verbatim file</a>`))
+
+	createFile(join(srcDir, "sample-files", "verbatim.html"), fmt.Sprintf(`
+<p>An html file with no layout</p>`))
+
+	createFile(join(srcDir, "trash", "testfile"), fmt.Sprintf(`
+a discarded file but not yet deleted for possible future reference
+this will not be included in the build
+`))
+
+	printLog("*** done")
+	return nil
 }
