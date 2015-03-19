@@ -1,8 +1,10 @@
 package util
 
 import (
+	"errors"
 	"gopkg.in/fsnotify.v1"
 	"io"
+	"io/ioutil"
 	"os"
 	fpath "path/filepath"
 )
@@ -67,4 +69,16 @@ func RecursiveWatch(w *fsnotify.Watcher, dir string) {
 		}
 		return nil
 	})
+}
+
+func FileExists(filename string) bool {
+	_, err := os.Open(filename)
+	return err == nil
+}
+
+func CreateFile(filename, contents string) error {
+	if FileExists(filename) {
+		return errors.New("file already exists: " + filename)
+	}
+	return ioutil.WriteFile(filename, []byte(contents), 0644)
 }
