@@ -109,7 +109,6 @@ func main() {
 	}
 
 	name := args[0]
-	args = args[1:]
 	action, ok := actions[name]
 
 	if !ok {

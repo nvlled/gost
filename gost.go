@@ -51,15 +51,15 @@ var actions = map[string]func(*gostState, []string){
 	},
 	"newfile": func(state *gostState, args []string) {
 		defer errHandler()
-		if len(args) == 0 {
-			println("missings args: newfile <path> [title]")
+		if len(args) < 2 {
+			println("missings args: " + args[0] + " <path> [title]")
 			println("Note: path must be relative to source directory:", state.srcDir)
 			return
 		}
-		path := args[0]
+		path := args[1]
 		var title string
-		if len(args) > 1 {
-			title = args[1]
+		if len(args) > 2 {
+			title = args[2]
 		}
 		makeFile(state, path, title)
 	},
