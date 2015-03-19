@@ -93,3 +93,18 @@ func RelativizePath(srcPath, destPath string) string {
 func PrependPath(s, prefix string) string {
 	return path.Clean(fpath.Join(prefix, s))
 }
+
+// deletes all whitespaces before and including '|'
+// in each line
+func Detab(s string) string {
+	marker := uint8('|')
+	lines := strings.Split(s, "\n")
+	for i := range lines {
+		s := strings.TrimLeft(lines[i], " \t")
+		if len(s) > 0 && s[0] == marker {
+			s = s[1:]
+		}
+		lines[i] = s
+	}
+	return strings.Join(lines, "\n")
+}

@@ -327,108 +327,108 @@ func newSampleProject(dirname string) error {
 	mkdir(join(dirname, srcDir, "sample-files"))
 	mkdir(join(dirname, srcDir, "trash"))
 
-	createFile(defaultOptsfile, fmt.Sprintf(`
---srcDir %s
---destDir %s`, srcDir, destDir))
+	createFile(defaultOptsfile, detabf(`
+	|--srcDir %s
+	|--destDir %s`, srcDir, destDir))
 
-	createFile(join(srcDir, genv.FILENAME), fmt.Sprintf(`
-layout: %s
-sitename: %s
-verbatim: sample-files/
-excludes: trash/
-`, layoutFile, dirname))
+	createFile(join(srcDir, genv.FILENAME), detabf(`
+	|layout: %s
+	|sitename: %s
+	|verbatim: sample-files/
+	|excludes: trash/
+	`, layoutFile, dirname))
 
-	createFile(join(srcDir, "articles", genv.FILENAME), fmt.Sprintf(`
-template: %s
-category: article`, templateFile))
+	createFile(join(srcDir, "articles", genv.FILENAME), detabf(`
+	|template: %s
+	|category: article`, templateFile))
 
-	createFile(join(srcDir, defaultLayoutsDir, layoutFile), fmt.Sprintf(`
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title>{{with .title}}{{.}} - {{end}}{{.sitename}}</title>
-</head>
-<body>
-<div id="wrapper">
-	<a href='{{urlfor "home"}}'>home</a>
-	<h2>{{.title}}</h2>
-	{{.contents}}
-</div>
-</body>
-</html>`))
+	createFile(join(srcDir, defaultLayoutsDir, layoutFile), detabf(`
+	|<html lang="en">
+	|<head>
+	|<meta charset="UTF-8">
+	|<title>{{with .title}}{{.}} - {{end}}{{.sitename}}</title>
+	|</head>
+	|<body>
+	|<div id="wrapper">
+	|<a href='{{urlfor "home"}}'>home</a>
+	|<h2>{{.title}}</h2>
+	|{{.contents}}
+	|</div>
+	|</body>
+	|</html>`))
 
-	createFile(join(srcDir, defaultLayoutsDir, "other.html"), fmt.Sprintf(`
-<html lang="en">
-<body>
-<div id="sidebar">
-	<a href='{{urlfor "home"}}'>home</a>
-	<a href='{{urlfor "hello"}}'>hello</a>
-</div>
-<div id="contents">
-	{{.contents}}
-</div>
-<div id="footer">fock semantic tags</div>
-</body>
-</html>`))
+	createFile(join(srcDir, defaultLayoutsDir, "other.html"), detabf(`
+	|<html lang="en">
+	|<body>
+	|<div id="sidebar">
+	|<a href='{{urlfor "home"}}'>home</a>
+	|<a href='{{urlfor "hello"}}'>hello</a>
+	|</div>
+	|<div id="contents">
+	|{{.contents}}
+	|</div>
+	|<div id="footer">fock semantic tags</div>
+	|</body>
+	|</html>`))
 
-	createFile(join(srcDir, defaultIncludesDir, "includes.html"), fmt.Sprintf(`
-{{define "emphasize"}}
-<em><blink>__{{.}}__</blink><em>
-{{end}}
-`))
+	createFile(join(srcDir, defaultIncludesDir, "includes.html"), detabf(`
+	|{{define "emphasize"}}
+	|<em><blink>__{{.}}__</blink><em>
+	|{{end}}
+	`))
 
-	createFile(join(srcDir, "index.html"), fmt.Sprintf(`
--------------------------
-id: home
-title: Welcome
--------------------------
+	createFile(join(srcDir, "index.html"), detabf(`
+	|-------------------------
+	|id: home
+	|title: Welcome
+	|-------------------------
 
-<p>This is the home page</p>
+	|<p>This is the home page</p>
 
-<h3>articles</h3>
-<ul>
-{{range (with_env "category" "article")}}
-	<li><a href="{{.path}}">{{.title}}</a></li>
-{{end}}
-</ul>`))
+	|<h3>articles</h3>
+	|<ul>
+	|{{range (with_env "category" "article")}}
+	|<li><a href="{{.path}}">{{.title}}</a></li>
+	|{{end}}
+	|</ul>`))
 
-	createFile(join(srcDir, defaultTemplatesDir, templateFile), fmt.Sprintf(`
-----------------------
-id: [[genid]]
-title: [[.title]]
-date: [[shell "date"]]
-----------------------
+	createFile(join(srcDir, defaultTemplatesDir, templateFile), detabf(`
+	|----------------------
+	|id: [[genid]]
+	|title: [[.title]]
+	|date: [[shell "date"]]
+	|----------------------
 
-<p>pikachu elf is fake</p>`))
+	|<p>pikachu elf is fake</p>`))
 
-	createFile(join(srcDir, "articles", "hello.html"), fmt.Sprintf(`
---------
-id: hello
-title: Title is hello
---------
+	createFile(join(srcDir, "articles", "hello.html"), detabf(`
+	|--------
+	|id: hello
+	|title: Title is hello
+	|--------
 
-<p>Hello, this is a greeting with no intrinsic value
-See the other equally-useless <a href='{{urlfor "sample"}}'>article</a>
-{{template "emphasize" "u sock"}}
-</p>`))
+	|<p>Hello, this is a greeting with no intrinsic value
+	|See the other equally-useless <a href='{{urlfor "sample"}}'>article</a>
+	|{{template "emphasize" "u sock"}}
+	|</p>`))
 
-	createFile(join(srcDir, "articles", "sample.html"), fmt.Sprintf(`
---------
-id: sample
-title: A title
-layout: other.html
---------
+	createFile(join(srcDir, "articles", "sample.html"), detabf(`
+	|--------
+	|id: sample
+	|title: A title
+	|layout: other.html
+	|--------
 
-<p>A sample page with sample links</a>
-<a href="sample-files/verbatim.html">verbatim file</a>`))
+	|<p>A sample page with sample links</a>
+	|<a href="sample-files/verbatim.html">verbatim file</a>`))
 
-	createFile(join(srcDir, "sample-files", "verbatim.html"), fmt.Sprintf(`
-<p>An html file with no layout</p>`))
+	createFile(join(srcDir, "sample-files", "verbatim.html"), detabf(`
+	|<p>An html file with no layout</p>`))
 
-	createFile(join(srcDir, "trash", "testfile"), fmt.Sprintf(`
-a discarded file but not yet deleted for possible future reference
-this will not be included in the build
-`))
+	createFile(join(srcDir, "trash", "testfile"), detabf(`
+	|a discarded file but not yet deleted for possible future reference
+	|this will not be included in the build
+	`))
 
 	printLog("*** done")
 	return nil
