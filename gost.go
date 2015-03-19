@@ -24,7 +24,6 @@ const (
 
 type Index map[string]genv.T
 
-// note: index is not actually used
 var index Index
 var pathIndex Index
 
@@ -83,7 +82,7 @@ var actions = map[string]func(*gostOpts, []string){
 	"newfile": func(opts *gostOpts, args []string) {
 		validateOpts(opts, srcDirSet, srcDirExists)
 		state := optsToState(opts)
-		defer errHandler()
+		defer catchError()
 		if len(args) < 2 {
 			println("missings args: " + args[0] + " <path> [title]")
 			println("Note: path must be relative to source directory:", state.srcDir)
@@ -94,12 +93,12 @@ var actions = map[string]func(*gostOpts, []string){
 		if len(args) > 2 {
 			title = args[2]
 		}
-		makeFile(state, path, title)
+		newProjectFile(state, path, title)
 	},
 }
 
 func runBuild(state *gostState) {
-	defer errHandler()
+	defer catchError()
 
 	index = make(Index)
 	pathIndex = make(Index)
@@ -119,7 +118,7 @@ func runBuild(state *gostState) {
 	println("** done.")
 }
 
-func makeFile(state *gostState, path, title string) {
+func newProjectFile(state *gostState, path, title string) {
 	srcDir := state.srcDir
 	fullpath := fpath.Join(srcDir, path)
 	fulldir := fpath.Dir(fullpath)
@@ -294,23 +293,6 @@ func buildOutput(state *gostState, t *template.Template) {
 		return
 	}
 	fpath.Walk(srcDir, fn)
-}
-
-func errHandler() {
-	err := recover()
-	if err != nil {
-		fmt.Printf("*** error %v\n", err)
-	}
-}
-
-func isItemplate(path string) bool {
-	ext := fpath.Ext(path)
-	for _, ext_ := range itemplates {
-		if ext == ext_ {
-			return true
-		}
-	}
-	return false
 }
 
 func newSampleProject(dirname string) error {

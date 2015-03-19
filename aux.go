@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/nvlled/gost/util"
 	"os"
 	fpath "path/filepath"
@@ -44,4 +45,21 @@ func fail(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func catchError() {
+	err := recover()
+	if err != nil {
+		fmt.Printf("*** error %v\n", err)
+	}
+}
+
+func isItemplate(path string) bool {
+	ext := fpath.Ext(path)
+	for _, ext_ := range itemplates {
+		if ext == ext_ {
+			return true
+		}
+	}
+	return false
 }
