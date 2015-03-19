@@ -44,13 +44,17 @@ var defaultExcludesList = []predicate{
 var itemplates = []string{".html", ".js", ".css"}
 
 func usage(prog string, flagSet *flag.FlagSet) {
+	indent := "  "
 	fmt.Printf("Usage: %s [options] action args...\n", prog)
 	println("actions:")
 	for name, _ := range actions {
-		println("  ", name)
+		println(indent, name)
 	}
 	println("options:")
 	flagSet.PrintDefaults()
+	println("action help:")
+	println(indent, "Specify both -help and the action to show help for each action")
+	fmt.Printf("%s%s --help <action>\n", indent, prog)
 }
 
 func printLog(args ...interface{}) {
@@ -98,7 +102,7 @@ func main() {
 	opts.destDir = prependBase(*opts.destDir)
 
 	verbose = *opts.verbose
-	if *opts.help || (len(os.Args) < 2 && *opts.srcDir == "") {
+	if len(os.Args) < 2 && *opts.srcDir == "" {
 		usage(prog, flagSet)
 		return
 	}
@@ -114,9 +118,12 @@ func main() {
 
 	if !ok {
 		println("unknown action:", name)
+	} else if *opts.help {
+		fmt.Printf(action.help, prog, name)
+		println()
 	} else {
 		defer handleValidation()
-		action(opts, args)
+		action.fn(opts, args)
 	}
 }
 

@@ -34,66 +34,120 @@ var srcDestDiff = newValidator(notEqual("srcDir", "destDir"), "source and destin
 
 var fullCheck = []validator{srcDirSet, srcDirExists, destDirSet, srcDestDiff}
 
-var actions = map[string]func(*gostOpts, []string){
-	"new": func(_ *gostOpts, args []string) {
-		if len(args) < 2 {
-			fmt.Printf("missing args: %s <name>\n", args[0])
-			return
-		}
-		dirname := args[1]
-		if util.DirExists(dirname) {
-			println("directory already exists: ", dirname)
-			return
-		}
-		err := newSampleProject(dirname)
-		if err != nil {
-			fmt.Printf("New project creation failed, %s", err)
-		}
-	},
-	"build": func(opts *gostOpts, _ []string) {
-		validateOpts(opts, fullCheck...)
-		state := optsToState(opts)
-		runBuild(state)
-	},
-	"watch": func(opts *gostOpts, _ []string) {
-		validateOpts(opts, fullCheck...)
-		state := optsToState(opts)
-		runBuild(state)
-		srcDir := state.srcDir
+type action struct {
+	help string
+	fn   func(*gostOpts, []string)
+}
 
-		printLog("watching", srcDir)
-		watcher, err := fsnotify.NewWatcher()
-		util.RecursiveWatch(watcher, srcDir)
-		fail(err)
-		rebuild := util.Throttle(func() { runBuild(state) }, 900)
-		for {
-			select {
-			case e := <-watcher.Events:
-				printLog(">", e.String())
-				rebuild()
+var actions = map[string]action{
+	"new": action{
+		util.Detab(`usage: %s %s <projectname>
+
+		|Creates a new project based on a template.
+		|The project is placed on a directory
+		|named <projectname>.
+		`),
+		func(_ *gostOpts, args []string) {
+			if len(args) < 2 {
+				fmt.Printf("missing args: %s <name>\n", args[0])
+				return
 			}
-		}
+			dirname := args[1]
+			if util.DirExists(dirname) {
+				println("directory already exists: ", dirname)
+				return
+			}
+			err := newSampleProject(dirname)
+			if err != nil {
+				fmt.Printf("New project creation failed, %s", err)
+			}
+		},
 	},
-	"clean": func(opts *gostOpts, _ []string) {
-		validateOpts(opts, fullCheck...)
-		state := optsToState(opts)
-		cleanBuildDir(state)
+	"build": action{
+		util.Detab(`usage: %s --srcDir <dir> --destDir <dir> %s
+
+		|Builds the projects from srcDir and stores
+		|them in destDir. srcDir and destDir may also be
+		|specified in the opts file.
+
+		|srcDir and destDir must not be the same.
+		`),
+		func(opts *gostOpts, _ []string) {
+			validateOpts(opts, fullCheck...)
+			state := optsToState(opts)
+			runBuild(state)
+		},
 	},
-	"newfile": func(opts *gostOpts, args []string) {
-		validateOpts(opts, srcDirSet, srcDirExists)
-		state := optsToState(opts)
-		defer catchError()
-		if len(args) < 2 {
-			println("missings args: " + args[0] + " <path> [title]")
-			println("Note: path must be relative to source directory:", state.srcDir)
-			return
-		}
-		path := args[1]
-		var title string
-		if len(args) > 2 {
-			title = args[2]
-		}
-		newProjectFile(state, path, title)
+	"watch": action{
+		util.Detab(`usage: %s --srcDir <dir> --destDir <dir> %s
+
+		|Same as build action, but watches the
+		|srcDir for changes (such creation
+		|of a new file or modification of an
+		|existing file) and then re-builds the project
+		|accordingly..
+		`),
+		func(opts *gostOpts, _ []string) {
+			validateOpts(opts, fullCheck...)
+			state := optsToState(opts)
+			runBuild(state)
+			srcDir := state.srcDir
+
+			printLog("watching", srcDir)
+			watcher, err := fsnotify.NewWatcher()
+			util.RecursiveWatch(watcher, srcDir)
+			fail(err)
+			rebuild := util.Throttle(func() { runBuild(state) }, 900)
+			for {
+				select {
+				case e := <-watcher.Events:
+					printLog(">", e.String())
+					rebuild()
+				}
+			}
+		},
+	},
+	"clean": action{
+		util.Detab(`usage: %s --srcDir <dir> --destDir <dir> %s
+
+		|Removes all the files created from a build action.
+		|If dest is a directory created from build action,
+		|as indicated by the presence of .gost-distdel in it,
+		|then it is deleted.
+		`),
+		func(opts *gostOpts, _ []string) {
+			validateOpts(opts, fullCheck...)
+			state := optsToState(opts)
+			cleanBuildDir(state)
+		},
+	},
+	"newfile": action{
+		util.Detab(`usage: %s --srcDir <dir> %s <filename>
+
+		|Creates a file in the project.
+		|Directory of <filename> must be relative to
+		|the srcDir.
+		|Example: newfile posts/hello.html
+
+		|Also, env of the directory of <filename>
+		|must contain a template entry.
+		`),
+		func(opts *gostOpts, args []string) {
+			validateOpts(opts, srcDirSet, srcDirExists)
+			state := optsToState(opts)
+			defer catchError()
+			if len(args) < 2 {
+				println("missings args: " + args[0] + " <path> [title]")
+				println("Note: path must be relative to source directory:", state.srcDir)
+				return
+			}
+			path := args[1]
+			var title string
+			if len(args) > 2 {
+				title = args[2]
+			}
+			newProjectFile(state, path, title)
+		},
 	},
 }
 
@@ -315,6 +369,9 @@ func newSampleProject(dirname string) error {
 		path = join(dirname, path)
 		printLog("create file: ", path)
 		util.CreateFile(path, contents)
+	}
+	detabf := func(s string, args ...interface{}) string {
+		return util.Detab(fmt.Sprintf(s, args...))
 	}
 
 	mkdir(dirname)
