@@ -45,7 +45,7 @@ func parseArgs(args []string, defaults *gostOpts) (*gostOpts, *flag.FlagSet) {
 
 	srcDir := flagSet.String("srcDir", *defaults.srcDir, "source files")
 	destDir := flagSet.String("destDir", *defaults.destDir, "destination files")
-	optsfile := flagSet.String("optsfile", *defaults.optsfile, "build file")
+	optsfile := flagSet.String("opts", *defaults.optsfile, "build file")
 	help := flagSet.Bool("help", *defaults.help, "show help")
 	verbose := flagSet.Bool("verbose", *defaults.verbose, "show verbose output")
 
@@ -59,7 +59,7 @@ func parseArgs(args []string, defaults *gostOpts) (*gostOpts, *flag.FlagSet) {
 			opts.srcDir = srcDir
 		case "destDir":
 			opts.destDir = destDir
-		case "optsfile":
+		case "opts":
 			opts.optsfile = optsfile
 		case "help":
 			opts.help = help
