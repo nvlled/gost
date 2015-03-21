@@ -390,6 +390,7 @@ func newSampleProject(dirname string) error {
 	mkdir(join(dirname, srcDir, "articles"))
 	mkdir(join(dirname, srcDir, "sample-files"))
 	mkdir(join(dirname, srcDir, "trash"))
+	mkdir(join(dirname, srcDir, "styles"))
 
 	// TODO: remove hardcoded values
 
@@ -451,6 +452,7 @@ func newSampleProject(dirname string) error {
 	|<head>
 	|<meta charset="UTF-8">
 	|<title>{{with .title}}{{.}} - {{end}}{{.sitename}}</title>
+	|<link rel="stylesheet" href='{{url "/styles/site.css"}}' />
 	|</head>
 	|<body>
 	|<div id="wrapper">
@@ -556,6 +558,13 @@ func newSampleProject(dirname string) error {
 	createFile(join(srcDir, "trash", "testfile"), detabf(`
 	|a discarded file but not yet deleted for possible future reference
 	|this will not be included in the build
+	`))
+
+	createFile(join(srcDir, "styles", "site.css"), detabf(`
+	|#wrapper {
+	|	width: 800px;
+	|	margin: auto;
+	|}
 	`))
 
 	printLog("*** done")
