@@ -18,6 +18,7 @@ const (
 	layoutKey    = recenvPrefix + "layout"
 	protoKey     = recenvPrefix + "proto"
 
+	relativeKey = recenvPrefix + "relative-url"
 	includesKey = recenvPrefix + "includes-dir"
 	layoutsKey  = recenvPrefix + "layouts-dir"
 	protosKey   = recenvPrefix + "protos-dir"

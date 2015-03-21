@@ -432,6 +432,10 @@ func newSampleProject(dirname string) error {
 	|- no need to explicitly define a name for the template.
 	|protos-dir:
 
+	|- If set, urls created with calls to url and urlfor
+	|- will be relative urls as opposed to be absolute urls
+	|relative-url: true
+
 	`, dirname, layoutFile))
 
 	createFile(join(srcDir, "articles", genv.FILENAME), detabf(`
@@ -506,7 +510,7 @@ func newSampleProject(dirname string) error {
 	|<h3>articles</h3>
 	|<ul>
 	|{{range (with_env "category" "article")}}
-	|<li><a href="{{.path}}">{{.title}}</a></li>
+	|<li><a href="{{url .path}}">{{.title}}</a></li>
 	|{{end}}
 	|</ul>`))
 
