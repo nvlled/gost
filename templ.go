@@ -28,7 +28,7 @@ func createFuncMap(curPath string) template.FuncMap {
 			for _, env := range index {
 				v := env.Get(key)
 				if value == v {
-					envs = append(envs, env)
+					envs = append(envs, env.Entries())
 				}
 			}
 			return envs
@@ -40,7 +40,8 @@ func applyTemplate(t *template.Template, s string, env genv.T) string {
 	curPath := env.Get("path")
 	buf := new(bytes.Buffer)
 	funcs := createFuncMap(curPath)
-	err := template.Must(t.New(curPath).Funcs(funcs).Parse(s)).Execute(buf, env)
+	entries := env.Entries()
+	err := template.Must(t.New(curPath).Funcs(funcs).Parse(s)).Execute(buf, entries)
 	fail(err)
 	return buf.String()
 }
@@ -51,15 +52,16 @@ func applyLayout(t *template.Template, s string, env genv.T) string {
 		return s
 	}
 
-	env["Contents"] = s
-	env["contents"] = s
-	env["Body"] = s
-	env["body"] = s
+	env.Set("Contents", s)
+	env.Set("contents", s)
+	env.Set("Body", s)
+	env.Set("body", s)
 
 	curPath := env.Get("path")
 	buf := new(bytes.Buffer)
 	funcs := createFuncMap(curPath)
-	err := t.New(curPath).Funcs(funcs).ExecuteTemplate(buf, layout, env)
+	entries := env.Entries()
+	err := t.New(curPath).Funcs(funcs).ExecuteTemplate(buf, layout, entries)
 	fail(err)
 	return buf.String()
 }

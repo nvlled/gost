@@ -10,12 +10,54 @@ import (
 	"strings"
 )
 
-type T map[string]interface{}
+const (
+	FILENAME = "env"
+	SEP      = ":"
+	LINE_SEP = "---"
+)
 
-func New() T { return make(T) }
+// Since I want to be able to do something
+// like {{.someValue}} using an env as a context,
+// I need to use maps[string]interface{}.
+// Unfortunately, this means I can't use more
+// efficient datastructures for representing envs.
 
-func (env T) GetOk(k string) (string, bool) {
-	v, ok := env[k]
+type T interface {
+	Set(k string, v interface{})
+	SetParent(T)
+	GetOk(k string) (string, bool)
+	Get(k string) string
+	GetOr(k, defValue string) string
+	Entries() map[string]interface{}
+}
+
+type genv struct {
+	entries  map[string]interface{}
+	parent   T
+	buffered bool
+}
+
+func newGenv() *genv {
+	return &genv{
+		entries:  make(map[string]interface{}),
+		buffered: false,
+		parent:   nil,
+	}
+}
+
+func New() T {
+	env := newGenv()
+	return env
+}
+
+func (env *genv) New() T {
+	subEnv := newGenv()
+	subEnv.parent = env
+	return subEnv
+}
+
+func (env *genv) getOk(k string) (string, bool) {
+	v, ok := env.entries[k]
 	if !ok {
 		return "", false
 	}
@@ -27,45 +69,69 @@ func (env T) GetOk(k string) (string, bool) {
 	}
 }
 
-func (env T) Get(k string) string {
+func (env *genv) GetOk(k string) (string, bool) {
+	if v, ok := env.getOk(k); ok {
+		return v, ok
+	}
+	if env.parent != nil {
+		return env.parent.GetOk(k)
+	}
+	return "", false
+}
+
+func (env *genv) Get(k string) string {
 	v, _ := env.GetOk(k)
 	return v
 }
 
-func (env T) GetOr(k string, defValue string) string {
+func (env *genv) GetOr(k string, defValue string) string {
 	if val := env.Get(k); val != "" {
 		return val
 	}
 	return defValue
 }
 
-const (
-	FILENAME = "env"
-	SEP      = ":"
-	LINE_SEP = "---"
-)
+func (env *genv) Set(k string, v interface{}) {
+	env.entries[k] = v
+}
 
-func Merge(dest T, src T) T {
-	env := make(T)
-	for k, v := range src {
-		env[k] = v
+func (env *genv) SetParent(parent T) {
+	env.parent = parent
+	env.buffered = false
+}
+
+func (env *genv) Entries() map[string]interface{} {
+	if env.buffered {
+		return env.entries
 	}
-	for k, v := range dest {
-		if v != "" {
-			env[k] = v
+	entries := make(map[string]interface{})
+	if env.parent != nil {
+		for k, v := range env.parent.Entries() {
+			entries[k] = v
 		}
 	}
-	return env
+	for k, v := range env.entries {
+		if v == nil {
+			continue
+		}
+		if s, ok := v.(string); ok && s == "" {
+			continue
+		}
+		entries[k] = v
+	}
+	env.entries = entries
+	env.buffered = true
+	return entries
 }
 
 func Parse(s string) T {
-	env := make(T)
+	env := newGenv()
 	for _, line := range strings.Split(s, "\n") {
 		sub := strings.SplitN(line, SEP, 2)
 		if len(sub) == 2 {
 			k := strings.TrimSpace(sub[0])
 			v := strings.TrimSpace(sub[1])
-			env[k] = v
+			env.entries[k] = v
 		}
 	}
 	return env
@@ -74,11 +140,11 @@ func Parse(s string) T {
 func ReadFile(filename string) (T, error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return make(T), err
+		return newGenv(), err
 	}
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		return make(T), err
+		return newGenv(), err
 	}
 
 	return Parse(string(bytes)), nil
@@ -95,17 +161,17 @@ func ReadEnv(path string) T {
 	// TODO: reduce boilerplate
 	file, err := os.Open(path)
 	if err != nil {
-		return make(T)
+		return newGenv()
 	}
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		return make(T)
+		return newGenv()
 	}
 
 	lines := strings.Split(string(bytes), "\n")
 	start, end := findEnvRange(lines)
 	if start < 0 || end < 0 {
-		return make(T)
+		return newGenv()
 	}
 	lines = lines[start:end]
 	return Parse(strings.Join(lines, "\n"))

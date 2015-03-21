@@ -198,11 +198,13 @@ func newProjectFile(state *gostState, path, title string) {
 
 	env := genv.New()
 	for _, dir := range subDirList(srcDir, path) {
-		parentEnv := genv.ReadDir(dir)
-		env = genv.Merge(env, parentEnv)
+		subEnv := genv.ReadDir(dir)
+		subEnv.SetParent(env)
+		env = subEnv
 	}
+
 	if title != "" {
-		env["title"] = title
+		env.Set("title", title)
 	}
 
 	protoName := env.Get(protoKey)
@@ -226,7 +228,7 @@ func newProjectFile(state *gostState, path, title string) {
 	file, err := os.Create(fullpath)
 	fail(err)
 	printLog("using", "`"+protoName+"`", "prototype from", protoDir)
-	err = t.ExecuteTemplate(file, protoName, env)
+	err = t.ExecuteTemplate(file, protoName, env.Entries())
 	printLog("file created ->", fullpath)
 	fail(err)
 }
@@ -270,7 +272,7 @@ func buildIndex(state *gostState, path string, parentEnv genv.T) {
 		log.Println(err)
 	} else if info.IsDir() {
 		env := genv.ReadDir(path)
-		env = genv.Merge(env, parentEnv)
+		env.SetParent(parentEnv)
 
 		dirs, err := util.ReadDir(path, func(f string) bool {
 			return state.isFileExcluded(f)
@@ -285,13 +287,13 @@ func buildIndex(state *gostState, path string, parentEnv genv.T) {
 		}
 	} else if isItemplate(path) {
 		env := genv.ReadEnv(path)
-		env = genv.Merge(env, parentEnv)
-		env["path"] = fpath.Join("/", strings.TrimPrefix(path, srcDir))
+		env.SetParent(parentEnv)
+		env.Set("path", fpath.Join("/", strings.TrimPrefix(path, srcDir)))
 
 		pathIndex[path] = env
 		if id, ok := env.GetOk("id"); ok {
 			if otherEnv, dokie := index[id]; dokie {
-				otherPath := otherEnv["path"]
+				otherPath := otherEnv.Get("path")
 				log.Println("Duplicate id for paths", path, otherPath)
 			}
 			printLog("adding", path, "to index, id =", id)
@@ -477,7 +479,7 @@ func newSampleProject(dirname string) error {
 
 	createFile(join(srcDir, "index.html"), detabf(`
 	|-------------------------
-	|- Lines without : are ignored, such as this one.
+	|- Lines without colon are ignored, such as this one.
 	|- I'm using my sloppy programming as an
 	|- opportunity to squeeze some docs here.
 	|-
