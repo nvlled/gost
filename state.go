@@ -5,11 +5,11 @@ import (
 )
 
 type gostState struct {
-	srcDir       string
-	destDir      string
-	includesDir  string
-	layoutsDir   string
-	templatesDir string
+	srcDir      string
+	destDir     string
+	includesDir string
+	layoutsDir  string
+	protosDir   string
 
 	verbatimList []predicate
 	excludeList  []predicate
@@ -32,8 +32,8 @@ func (state *gostState) setLayoutsDir(dir string) *gostState {
 	return state
 }
 
-func (state *gostState) setTemplatesDir(dir string) *gostState {
-	state.templatesDir = util.PrependPath(dir, state.srcDir)
+func (state *gostState) setProtosDir(dir string) *gostState {
+	state.protosDir = util.PrependPath(dir, state.srcDir)
 	return state
 }
 
@@ -58,8 +58,8 @@ func (state *gostState) makeVars() Vars {
 			return state.includesDir
 		case "layoutsDir":
 			return state.layoutsDir
-		case "templatesDir":
-			return state.templatesDir
+		case "protosDir":
+			return state.protosDir
 		}
 		return ""
 	}

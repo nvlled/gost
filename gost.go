@@ -48,7 +48,7 @@ var actions = map[string]action{
 	"new": action{
 		util.Detab(`usage: %s %s <projectname>
 
-		|Creates a new (sample) project based on a template.
+		|Creates a new (sample) project based on a prototype.
 		|The project is placed on a directory
 		|named <projectname>.
 		`),
@@ -135,7 +135,7 @@ var actions = map[string]action{
 		|Example: newfile posts/hello.html
 
 		|Also, env of the directory of <filename>
-		|must contain a template entry.
+		|must contain a proto entry.
 		`),
 		func(opts *gostOpts, args []string) {
 			validateOpts(opts, srcDirSet, srcDirExists)
@@ -205,28 +205,28 @@ func newProjectFile(state *gostState, path, title string) {
 		env["title"] = title
 	}
 
-	templName := env.Get(templateKey)
-	templDir := state.templatesDir
+	protoName := env.Get(protoKey)
+	protoDir := state.protosDir
 
-	if templName == "" {
-		println("no template for file", fullpath)
-		println("add `template: the-template-name` in env")
+	if protoName == "" {
+		println("no prototype for file", fullpath)
+		println("add `proto: the-prototype-name` in env")
 		return
 	}
 
 	t := createTemplate()
-	t.Delims(templateOpenDelim, templateCloseDelim)
-	globTemplates(t, templatesKey, templDir)
+	t.Delims(protoOpenDelim, protoCloseDelim)
+	globTemplates(t, protoKey, protoDir)
 
-	t = t.Lookup(templName)
+	t = t.Lookup(protoName)
 	if t == nil {
-		println("template not found:", templName)
+		println("prototype not found:", protoName)
 		return
 	}
 	file, err := os.Create(fullpath)
 	fail(err)
-	printLog("using", "`"+templName+"`", "template from", templDir)
-	err = t.ExecuteTemplate(file, templName, env)
+	printLog("using", "`"+protoName+"`", "prototype from", protoDir)
+	err = t.ExecuteTemplate(file, protoName, env)
 	printLog("file created ->", fullpath)
 	fail(err)
 }
@@ -359,7 +359,7 @@ func newSampleProject(dirname string) error {
 	srcDir := "src"
 	destDir := "build"
 	layoutFile := "default.html"
-	templateFile := "article.html"
+	protoFile := "article.html"
 
 	if util.DirExists(dirname) {
 		return errors.New("directory already exists: " + dirname)
@@ -384,7 +384,7 @@ func newSampleProject(dirname string) error {
 	mkdir(join(dirname, srcDir))
 	mkdir(join(dirname, srcDir, defaultIncludesDir))
 	mkdir(join(dirname, srcDir, defaultLayoutsDir))
-	mkdir(join(dirname, srcDir, defaultTemplatesDir))
+	mkdir(join(dirname, srcDir, defaultProtosDir))
 	mkdir(join(dirname, srcDir, "articles"))
 	mkdir(join(dirname, srcDir, "sample-files"))
 	mkdir(join(dirname, srcDir, "trash"))
@@ -425,20 +425,20 @@ func newSampleProject(dirname string) error {
 	|- need to put {{define "name"}} for each layout file.
 	|layouts-dir:
 
-	|- Contains templates used when newfile action is used
+	|- Contains prototypes used when newfile action is used
 	|- to create new project files. As in the layouts-dir,
 	|- no need to explicitly define a name for the template.
-	|templates-dir:
+	|protos-dir:
 
 	`, dirname, layoutFile))
 
 	createFile(join(srcDir, "articles", genv.FILENAME), detabf(`
 	|- A template for creating new files in this directory.
-	|-		$ gost newfile articles/weebosites.html
-	|- The value of template must be a filename in templates-dir.
-	|template: %s
+	|- example: gost newfile articles/weebosites.html
+	|- The value of proto must be a filename in protos-dir.
+	|proto: %s
 
-	|category: article`, templateFile))
+	|category: article`, protoFile))
 
 	createFile(join(srcDir, defaultLayoutsDir, layoutFile), detabf(`
 	|<html lang="en">
@@ -508,10 +508,10 @@ func newSampleProject(dirname string) error {
 	|{{end}}
 	|</ul>`))
 
-	createFile(join(srcDir, defaultTemplatesDir, templateFile), detabf(`
+	createFile(join(srcDir, defaultProtosDir, protoFile), detabf(`
 	|----------------------
-	|- templates uses [] delimeters from the
-	|- usual delimeters {}
+	|- prototypes uses [ [ delimeters from the
+	|- usual delimeters { {
 	|
 	|id: [[genid]]
 	|title: [[.title]]

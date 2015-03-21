@@ -16,16 +16,16 @@ const (
 	// recognized env (recenv) keys
 	recenvPrefix = ""
 	layoutKey    = recenvPrefix + "layout"
-	templateKey  = recenvPrefix + "template"
+	protoKey     = recenvPrefix + "proto"
 
-	includesKey  = recenvPrefix + "includes-dir"
-	layoutsKey   = recenvPrefix + "layouts-dir"
-	templatesKey = recenvPrefix + "templates-dir"
-	verbatimKey  = recenvPrefix + "verbatim-files"
-	excludesKey  = recenvPrefix + "exclude-files"
+	includesKey = recenvPrefix + "includes-dir"
+	layoutsKey  = recenvPrefix + "layouts-dir"
+	protosKey   = recenvPrefix + "protos-dir"
+	verbatimKey = recenvPrefix + "verbatim-files"
+	excludesKey = recenvPrefix + "exclude-files"
 
-	templateOpenDelim  = "[["
-	templateCloseDelim = "]]"
+	protoOpenDelim  = "[["
+	protoCloseDelim = "]]"
 )
 
 var verbose bool
@@ -47,7 +47,7 @@ var defaultOpts = func() *gostOpts {
 
 var defaultIncludesDir = "includes"
 var defaultLayoutsDir = "layouts"
-var defaultTemplatesDir = "templates"
+var defaultProtosDir = "protos"
 
 var defaultVerbatimList = []predicate{}
 var defaultExcludesList = []predicate{
@@ -56,7 +56,7 @@ var defaultExcludesList = []predicate{
 	baseIs(genv.FILENAME),
 	dirIsVar("includesDir"),
 	dirIsVar("layoutsDir"),
-	dirIsVar("templatesDir"),
+	dirIsVar("protosDir"),
 }
 
 var itemplates = []string{".html", ".js", ".css"}
@@ -154,7 +154,7 @@ func optsToState(opts *gostOpts) *gostState {
 
 	state.setIncludesDir(env.GetOr(includesKey, defaultIncludesDir))
 	state.setLayoutsDir(env.GetOr(layoutsKey, defaultLayoutsDir))
-	state.setTemplatesDir(env.GetOr(templatesKey, defaultTemplatesDir))
+	state.setProtosDir(env.GetOr(protosKey, defaultProtosDir))
 
 	fn := func(name string) []string {
 		paths := strings.Fields(env.Get(name))
