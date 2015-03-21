@@ -162,10 +162,10 @@ func runBuild(state *gostState) {
 
 	t := createTemplate()
 	printLog("loading includes", state.includesDir)
-	globTemplates(t, "includes-dir", state.includesDir)
+	globTemplates(t, includesKey, state.includesDir)
 
 	printLog("loading layouts", state.layoutsDir)
-	globTemplates(t, "layouts-dir", state.layoutsDir)
+	globTemplates(t, layoutsKey, state.layoutsDir)
 
 	printLog("building output...", state.layoutsDir)
 	buildOutput(state, t)
@@ -200,7 +200,7 @@ func newProjectFile(state *gostState, path, title string) {
 		env["title"] = title
 	}
 
-	templName := env.Get("template")
+	templName := env.Get(templateKey)
 	templDir := state.templatesDir
 
 	if templName == "" {
@@ -210,8 +210,8 @@ func newProjectFile(state *gostState, path, title string) {
 	}
 
 	t := createTemplate()
-	t.Delims("[[", "]]")
-	globTemplates(t, "templates-dir", templDir)
+	t.Delims(templateOpenDelim, templateCloseDelim)
+	globTemplates(t, templatesKey, templDir)
 
 	t = t.Lookup(templName)
 	if t == nil {

@@ -10,6 +10,24 @@ import (
 	"strings"
 )
 
+// TODO: exclude files from index too
+
+const (
+	// recognized env (recenv) keys
+	recenvPrefix = ""
+	layoutKey    = recenvPrefix + "layout"
+	templateKey  = recenvPrefix + "template"
+
+	includesKey  = recenvPrefix + "includes-dir"
+	layoutsKey   = recenvPrefix + "layouts-dir"
+	templatesKey = recenvPrefix + "templates-dir"
+	verbatimKey  = recenvPrefix + "verbatim-files"
+	excludesKey  = recenvPrefix + "exclude-files"
+
+	templateOpenDelim  = "[["
+	templateCloseDelim = "]]"
+)
+
 var verbose bool
 var defaultOptsfile = "gostopts"
 
@@ -134,9 +152,9 @@ func optsToState(opts *gostOpts) *gostState {
 	destDir := util.AddTrailingSlash(*opts.destDir)
 	state := newState(srcDir, destDir)
 
-	state.setIncludesDir(env.GetOr("includes", defaultIncludesDir))
-	state.setLayoutsDir(env.GetOr("layouts", defaultLayoutsDir))
-	state.setTemplatesDir(env.GetOr("templates", defaultTemplatesDir))
+	state.setIncludesDir(env.GetOr(includesKey, defaultIncludesDir))
+	state.setLayoutsDir(env.GetOr(layoutsKey, defaultLayoutsDir))
+	state.setTemplatesDir(env.GetOr(templatesKey, defaultTemplatesDir))
 
 	fn := func(name string) []string {
 		paths := strings.Fields(env.Get(name))
@@ -146,13 +164,13 @@ func optsToState(opts *gostOpts) *gostState {
 	state.setVerbatimList(
 		append(
 			defaultVerbatimList,
-			predicateList(subPathIs, fn("verbatim"))...,
+			predicateList(subPathIs, fn(verbatimKey))...,
 		),
 	)
 	state.setExcludeList(
 		append(
 			defaultExcludesList,
-			predicateList(subPathIs, fn("excludes"))...,
+			predicateList(subPathIs, fn(excludesKey))...,
 		),
 	)
 	return state

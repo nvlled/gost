@@ -46,7 +46,7 @@ func applyTemplate(t *template.Template, s string, env genv.T) string {
 }
 
 func applyLayout(t *template.Template, s string, env genv.T) string {
-	layout := env.Get("layout")
+	layout := env.Get(layoutKey)
 	if layout == "" {
 		return s
 	}
