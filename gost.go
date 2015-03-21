@@ -12,6 +12,11 @@ import (
 	"os"
 	fpath "path/filepath"
 	"strings"
+
+	// *** note:
+	// text/template is used for convenience
+	// since security against code injection
+	// from html/template isn't needed.
 	"text/template"
 )
 
@@ -43,7 +48,7 @@ var actions = map[string]action{
 	"new": action{
 		util.Detab(`usage: %s %s <projectname>
 
-		|Creates a new project based on a template.
+		|Creates a new (sample) project based on a template.
 		|The project is placed on a directory
 		|named <projectname>.
 		`),
@@ -375,7 +380,7 @@ func newSampleProject(dirname string) error {
 	}
 
 	mkdir(dirname)
-	mkdir(join(dirname, "build"))
+	//mkdir(join(dirname, "build"))
 	mkdir(join(dirname, srcDir))
 	mkdir(join(dirname, srcDir, defaultIncludesDir))
 	mkdir(join(dirname, srcDir, defaultLayoutsDir))
@@ -384,19 +389,55 @@ func newSampleProject(dirname string) error {
 	mkdir(join(dirname, srcDir, "sample-files"))
 	mkdir(join(dirname, srcDir, "trash"))
 
+	// TODO: remove hardcoded values
+
 	createFile(defaultOptsfile, detabf(`
 	|--srcDir %s
 	|--destDir %s`, srcDir, destDir))
 
 	createFile(join(srcDir, genv.FILENAME), detabf(`
-	|layout: %s
+	|- This file is the base-env
+
 	|sitename: %s
-	|verbatim: sample-files/
-	|excludes: trash/
-	`, layoutFile, dirname))
+
+	|- Takes the filename of the layout in the
+	|- layouts-dir. Since this is in the base-env,
+	|- all html files will this default layout unless
+	|- overriden.
+	|layout: %s
+
+	|- verbatim files are copied as is
+	|verbatim-files: sample-files/
+
+	|- exclude files are not include in the build output
+	|exclude-files: trash/
+
+	|- Contains snippets of html files
+	|- that can be included in other files.
+	|- (See docs for text/template)
+	|- Each snippet must be explicitly defined using
+	|- {{define "name"}}
+	|includes-dir:
+
+	|- Contains whole file layouts for
+	|- html files. The filename (including the file extension)
+	|- will be used as the value for the env entry 'template'. No
+	|- need to put {{define "name"}} for each layout file.
+	|layouts-dir:
+
+	|- Contains templates used when newfile action is used
+	|- to create new project files. As in the layouts-dir,
+	|- no need to explicitly define a name for the template.
+	|templates-dir:
+
+	`, dirname, layoutFile))
 
 	createFile(join(srcDir, "articles", genv.FILENAME), detabf(`
+	|- A template for creating new files in this directory.
+	|-		$ gost newfile articles/weebosites.html
+	|- The value of template must be a filename in templates-dir.
 	|template: %s
+
 	|category: article`, templateFile))
 
 	createFile(join(srcDir, defaultLayoutsDir, layoutFile), detabf(`
@@ -436,7 +477,25 @@ func newSampleProject(dirname string) error {
 
 	createFile(join(srcDir, "index.html"), detabf(`
 	|-------------------------
+	|- Lines without : are ignored, such as this one.
+	|- I'm using my sloppy programming as an
+	|- opportunity to squeeze some docs here.
+	|-
+	|- The env lines must at least be 3 dashes long.
+	|- The beginning and closing line must also
+	|- match in length.
+	|
+	|- A templated file needs an id to be added to the index.
+	|- Being added to the index means certain
+	|- operations are allowed such as getting the path for the
+	|- indexed file (see urlfor below)
 	|id: home
+	|
+	|- Of course, arbtrary entries can be added to the env
+	|- and they can be accessed using the dot notation
+	|x: 100
+	|y: 200
+	|message: Hello, some cursory  docs can be found here
 	|title: Welcome
 	|-------------------------
 
@@ -451,11 +510,15 @@ func newSampleProject(dirname string) error {
 
 	createFile(join(srcDir, defaultTemplatesDir, templateFile), detabf(`
 	|----------------------
+	|- templates uses [] delimeters from the
+	|- usual delimeters {}
+	|
 	|id: [[genid]]
 	|title: [[.title]]
 	|date: [[shell "date"]]
 	|----------------------
 
+	|<p>id: {{.id}}</p>
 	|<p>pikachu elf is fake</p>`))
 
 	createFile(join(srcDir, "articles", "hello.html"), detabf(`
@@ -473,9 +536,11 @@ func newSampleProject(dirname string) error {
 	|--------
 	|id: sample
 	|title: A title
+	|- override default layout
 	|layout: other.html
 	|--------
 
+	|url: {{url "/a/socio/path"}}
 	|<p>A sample page with sample links</a>
 	|<a href="sample-files/verbatim.html">verbatim file</a>`))
 
