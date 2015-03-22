@@ -523,7 +523,7 @@ func newSampleProject(dirname string) error {
 	|
 	|id: [[genid]]
 	|title: [[.title]]
-	|date: [[shell "date"]]
+	|date: [[date]]
 	|----------------------
 
 	|<p>id: {{.id}}</p>

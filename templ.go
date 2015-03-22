@@ -5,11 +5,15 @@ import (
 	"github.com/nvlled/gost/genv"
 	"github.com/nvlled/gost/util"
 	"text/template"
+	"time"
 )
 
 var globalFuncMap = template.FuncMap{
 	"genid": util.GenerateId,
 	"shell": util.Exec,
+	"date": func() string {
+		return time.Now().Format("Mon, 02 Jan 2006 MST")
+	},
 
 	// These stub functions are included
 	// in the funcMap so that includes and layouts
