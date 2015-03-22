@@ -197,7 +197,7 @@ func newProjectFile(state *gostState, path, title string) {
 	}
 
 	env := genv.New()
-	for _, dir := range subDirList(srcDir, path) {
+	for _, dir := range util.SubDirList(srcDir, path) {
 		subEnv := genv.ReadDir(dir)
 		subEnv.SetParent(env)
 		env = subEnv

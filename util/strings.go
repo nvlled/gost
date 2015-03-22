@@ -108,3 +108,14 @@ func Detab(s string) string {
 	}
 	return strings.Join(lines, "\n")
 }
+
+func SubDirList(baseDir string, path string) []string {
+	sep := string(fpath.Separator)
+	dirs := strings.Split(path, sep)
+
+	result := []string{baseDir}
+	for _, dir := range dirs {
+		result = append(result, fpath.Join(baseDir, dir))
+	}
+	return result
+}
