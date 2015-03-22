@@ -29,6 +29,7 @@ const (
 
 type Index map[string]genv.T
 
+// TODO: move to gostState
 var index Index
 var pathIndex Index
 
@@ -152,6 +153,65 @@ var actions = map[string]action{
 				title = args[2]
 			}
 			newProjectFile(state, path, title)
+		},
+	},
+	"render": action{
+		util.Detab(`usage: %s --srcDir <dir> %s <filename>
+
+		|Renders an itemplate in the stdout.
+		`),
+		func(opts *gostOpts, args []string) {
+			validateOpts(opts, srcDirSet, srcDirExists)
+			state := optsToState(opts)
+
+			if len(args) < 2 {
+				println("missings args: " + args[0] + " <itemplate>")
+				return
+			}
+
+			path := args[1]
+			if !isItemplate(path) {
+				println("not an itemplate:", path)
+				return
+			}
+
+			index = make(Index)
+			pathIndex = make(Index)
+			buildIndex(state, state.srcDir, genv.New())
+			env := pathIndex[path]
+
+			t := createTemplate()
+			printLog("loading includes", state.includesDir)
+			globTemplates(t, includesKey, state.includesDir)
+			printLog("loading layouts", state.layoutsDir)
+			globTemplates(t, layoutsKey, state.layoutsDir)
+
+			s := genv.ReadContents(path)
+			s = applyTemplate(t, s, env)
+
+			if fpath.Ext(path) == ".html" {
+				s = applyLayout(t, s, env)
+			}
+			println(s)
+		},
+	},
+	"show-env": action{
+		util.Detab(`usage: %s --srcDir <dir> %s <filename>
+
+		|Shows the complete env for a directory or itemplate.
+		`),
+		func(opts *gostOpts, args []string) {
+			validateOpts(opts, srcDirSet, srcDirExists)
+			state := optsToState(opts)
+
+			if len(args) < 2 {
+				println("missings args: " + args[0] + " <itemplate or directory>")
+				return
+			}
+			path := args[1]
+			path = fpath.Join("/", strings.TrimPrefix(path, state.srcDir))
+			env := genv.ReadAll(state.srcDir, path)
+			println(env.String())
 		},
 	},
 }
