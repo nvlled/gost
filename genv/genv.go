@@ -2,11 +2,13 @@ package genv
 
 import (
 	"fmt"
+	"github.com/nvlled/gost/util"
 	"io/ioutil"
 	"log"
 	"os"
 	fpath "path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -29,6 +31,7 @@ type T interface {
 	Get(k string) string
 	GetOr(k, defValue string) string
 	Entries() map[string]interface{}
+	String() string
 }
 
 type genv struct {
@@ -124,6 +127,20 @@ func (env *genv) Entries() map[string]interface{} {
 	return entries
 }
 
+func (env *genv) String() string {
+	entries := env.Entries()
+	var keys []string
+	for k := range entries {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	output := ""
+	for _, k := range keys {
+		output += k + SEP + " " + fmt.Sprintf("%v", entries[k]) + "\n"
+	}
+	return output
+}
+
 func Parse(s string) T {
 	env := newGenv()
 	for _, line := range strings.Split(s, "\n") {
@@ -133,6 +150,20 @@ func Parse(s string) T {
 			v := strings.TrimSpace(sub[1])
 			env.entries[k] = v
 		}
+	}
+	return env
+}
+
+func ReadAll(baseDir, path string) T {
+	env := New()
+	for _, dir := range util.SubDirList(baseDir, path) {
+		subEnv := ReadDir(dir)
+		subEnv.SetParent(env)
+		env = subEnv
+	}
+	if subEnv, err := ReadFile(fpath.Join(baseDir, path)); err == nil {
+		subEnv.SetParent(env)
+		env = subEnv
 	}
 	return env
 }
@@ -156,6 +187,7 @@ func ReadDir(dir string) T {
 	return env
 }
 
+// TODO: Rename to ReadEmbedded
 // expects two LINE_SEPs from a file
 func ReadEnv(path string) T {
 	// TODO: reduce boilerplate

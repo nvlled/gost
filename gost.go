@@ -179,7 +179,7 @@ func runBuild(state *gostState) {
 
 func newProjectFile(state *gostState, path, title string) {
 	srcDir := state.srcDir
-	fullpath := fpath.Join(srcDir, path)
+	fullpath := fpath.Join(srcDir, strings.TrimPrefix(path, srcDir))
 	fulldir := fpath.Dir(fullpath)
 
 	if info, err := os.Lstat(fullpath); err == nil {
@@ -196,12 +196,7 @@ func newProjectFile(state *gostState, path, title string) {
 		return
 	}
 
-	env := genv.New()
-	for _, dir := range util.SubDirList(srcDir, path) {
-		subEnv := genv.ReadDir(dir)
-		subEnv.SetParent(env)
-		env = subEnv
-	}
+	env := genv.ReadAll(srcDir, path)
 
 	if title != "" {
 		env.Set("title", title)
