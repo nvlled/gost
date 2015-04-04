@@ -31,11 +31,18 @@ type T interface {
 	Get(k string) string
 	GetOr(k, defValue string) string
 	Entries() map[string]interface{}
+	Parent() T
+	Normalize()
+	ClearBuffer()
+	Copy() T
+	Extend(T) T
+	OverrideBase(newBaseEnv T)
 	String() string
 }
 
 type genv struct {
 	entries  map[string]interface{}
+	buffer   map[string]interface{}
 	parent   T
 	buffered bool
 }
@@ -43,6 +50,7 @@ type genv struct {
 func newGenv() *genv {
 	return &genv{
 		entries:  make(map[string]interface{}),
+		buffer:   make(map[string]interface{}),
 		buffered: false,
 		parent:   nil,
 	}
@@ -60,7 +68,8 @@ func (env *genv) New() T {
 }
 
 func (env *genv) getOk(k string) (string, bool) {
-	v, ok := env.entries[k]
+	entries := env.Entries()
+	v, ok := entries[k]
 	if !ok {
 		return "", false
 	}
@@ -98,6 +107,10 @@ func (env *genv) Set(k string, v interface{}) {
 	env.entries[k] = v
 }
 
+func (env *genv) Parent() T {
+	return env.parent
+}
+
 func (env *genv) SetParent(parent T) {
 	env.parent = parent
 	env.buffered = false
@@ -105,12 +118,12 @@ func (env *genv) SetParent(parent T) {
 
 func (env *genv) Entries() map[string]interface{} {
 	if env.buffered {
-		return env.entries
+		return env.buffer
 	}
-	entries := make(map[string]interface{})
+	buffer := make(map[string]interface{})
 	if env.parent != nil {
 		for k, v := range env.parent.Entries() {
-			entries[k] = v
+			buffer[k] = v
 		}
 	}
 	for k, v := range env.entries {
@@ -120,11 +133,68 @@ func (env *genv) Entries() map[string]interface{} {
 		if s, ok := v.(string); ok && s == "" {
 			continue
 		}
-		entries[k] = v
+		buffer[k] = v
 	}
-	env.entries = entries
+	env.buffer = buffer
 	env.buffered = true
-	return entries
+	return buffer
+}
+
+func (self *genv) ClearBuffer() {
+	var env T = self
+	for env != nil {
+		if env, ok := env.(*genv); ok {
+			env.buffered = false
+		}
+		env = env.Parent()
+	}
+}
+
+// removes zero-length envs in the chain
+func (self *genv) Normalize() {
+	var env T = self
+	for env != nil && env.Parent() != nil {
+		for env.Parent() != nil && len(env.Parent().Entries()) == 0 {
+			env.SetParent(env.Parent().Parent())
+		}
+		env = env.Parent()
+	}
+}
+
+func (env *genv) Extend(subEnv T) T {
+	subEnv = subEnv.Copy()
+	subEnv.SetParent(env)
+	return subEnv
+}
+
+func (self *genv) OverrideBase(newBaseEnv T) {
+	//      |nil   <-   ...   <-   env1   <-   env2   <-   env3   <-   env4
+	//------+-------------------------------------------------------------
+	// loop1|                                                          ^env
+	// loop2|                                              ^env        ^interEnv
+	// loop3|                                  ^env        ^interEnv   ^baseEnv
+	// loop4|                      ^env        ^interEnv   ^baseEnv
+	//      |...
+	//      |until env  points to nil
+	var env T
+	var baseEnv T
+	var interEnv T
+
+	self.Normalize()
+
+	env = self
+	for env != nil {
+		interEnv = baseEnv
+		baseEnv = env
+		env = env.Parent()
+	}
+
+	if interEnv != nil {
+		interEnv.SetParent(newBaseEnv)
+		newBaseEnv.SetParent(baseEnv)
+		baseEnv.SetParent(nil)
+	}
+	self.ClearBuffer()
 }
 
 func (env *genv) String() string {
@@ -139,6 +209,11 @@ func (env *genv) String() string {
 		output += k + SEP + " " + fmt.Sprintf("%v", entries[k]) + "\n"
 	}
 	return output
+}
+
+func (env *genv) Copy() T {
+	newEnv := *env
+	return &newEnv
 }
 
 func Parse(s string) T {
