@@ -211,6 +211,8 @@ var actions = map[string]action{
 			path := args[1]
 			path = fpath.Join("/", strings.TrimPrefix(path, state.srcDir))
 			env := genv.ReadAll(state.srcDir, path)
+			//env = env.Extend(state.baseEnv)
+			env.OverrideBase(state.baseEnv)
 			println(env.String())
 		},
 	},
@@ -223,7 +225,7 @@ func runBuild(state *gostState) {
 	pathIndex = make(Index)
 
 	printLog("building index...")
-	buildIndex(state, state.srcDir, genv.New())
+	buildIndex(state, state.srcDir, state.baseEnv)
 
 	t := createTemplate()
 	printLog("loading includes", state.includesDir)
@@ -326,8 +328,16 @@ func buildIndex(state *gostState, path string, parentEnv genv.T) {
 	if err != nil {
 		log.Println(err)
 	} else if info.IsDir() {
-		env := genv.ReadDir(path)
-		env.SetParent(parentEnv)
+
+		var env genv.T
+		if fpath.Clean(path) == fpath.Clean(srcDir) {
+			// skip re-reading base-env
+			println("*** skipping baseEnv")
+			env = parentEnv
+		} else {
+			env = genv.ReadDir(path)
+			env.SetParent(parentEnv)
+		}
 
 		dirs, err := util.ReadDir(path, func(f string) bool {
 			return state.isFileExcluded(f)

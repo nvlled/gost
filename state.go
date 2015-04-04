@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nvlled/gost/genv"
 	"github.com/nvlled/gost/util"
 )
 
@@ -10,6 +11,7 @@ type gostState struct {
 	includesDir string
 	layoutsDir  string
 	protosDir   string
+	baseEnv     genv.T
 
 	verbatimList []predicate
 	excludeList  []predicate

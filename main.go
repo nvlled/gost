@@ -43,6 +43,7 @@ var defaultOpts = func() *gostOpts {
 		optsfile: &defaultOptsfile,
 		help:     &false_,
 		verbose:  &true_,
+		env:      &emptyStr,
 	}
 }()
 
@@ -147,12 +148,18 @@ func main() {
 }
 
 func optsToState(opts *gostOpts) *gostState {
-	env := genv.ReadDir(*opts.srcDir)
 
 	srcDir := util.AddTrailingSlash(*opts.srcDir)
 	destDir := util.AddTrailingSlash(*opts.destDir)
 	state := newState(srcDir, destDir)
 
+	// envs specified in the command line takes priority over
+	// the baseEnv (the env file in the src directory).
+	fileEnv := genv.ReadDir(*opts.srcDir)
+	env := genv.Parse(strings.Replace(*opts.env, ";", "\n", -1))
+	env.SetParent(fileEnv)
+
+	state.baseEnv = env
 	state.setIncludesDir(env.GetOr(includesKey, defaultIncludesDir))
 	state.setLayoutsDir(env.GetOr(layoutsKey, defaultLayoutsDir))
 	state.setProtosDir(env.GetOr(protosKey, defaultProtosDir))

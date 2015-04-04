@@ -105,6 +105,7 @@ func (env *genv) GetOr(k string, defValue string) string {
 
 func (env *genv) Set(k string, v interface{}) {
 	env.entries[k] = v
+	env.buffered = false
 }
 
 func (env *genv) Parent() T {
@@ -116,6 +117,9 @@ func (env *genv) SetParent(parent T) {
 	env.buffered = false
 }
 
+// Buffering (or should I say caching) has
+// a problem when parent envs are mutated
+// causing the child envs to have non-updated entries.
 func (env *genv) Entries() map[string]interface{} {
 	if env.buffered {
 		return env.buffer

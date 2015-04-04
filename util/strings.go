@@ -113,7 +113,7 @@ func SubDirList(baseDir string, path string) []string {
 	sep := string(fpath.Separator)
 	dirs := strings.Split(path, sep)
 
-	result := []string{baseDir}
+	result := []string{}
 	for _, dir := range dirs {
 		result = append(result, fpath.Join(baseDir, dir))
 	}

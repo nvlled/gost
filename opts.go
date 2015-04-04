@@ -15,6 +15,7 @@ type gostOpts struct {
 	optsfile *string
 	help     *bool
 	verbose  *bool
+	env      *string
 }
 
 // * merges opts and opts_
@@ -37,6 +38,9 @@ func (opts *gostOpts) merge(opts_ *gostOpts) *gostOpts {
 	if opts_.verbose != nil {
 		newOpts.verbose = opts_.verbose
 	}
+	if opts_.env != nil {
+		newOpts.env = opts_.env
+	}
 	return &newOpts
 }
 
@@ -48,6 +52,7 @@ func parseArgs(args []string, defaults *gostOpts) (*gostOpts, *flag.FlagSet) {
 	optsfile := flagSet.String("opts", *defaults.optsfile, "build file")
 	help := flagSet.Bool("help", *defaults.help, "show help")
 	verbose := flagSet.Bool("verbose", *defaults.verbose, "show verbose output")
+	env := flagSet.String("env", *defaults.env, "add base-env entries")
 
 	flagSet.Parse(args)
 
@@ -65,6 +70,8 @@ func parseArgs(args []string, defaults *gostOpts) (*gostOpts, *flag.FlagSet) {
 			opts.help = help
 		case "verbose":
 			opts.verbose = verbose
+		case "env":
+			opts.env = env
 		}
 	})
 	return opts, flagSet
