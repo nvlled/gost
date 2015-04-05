@@ -170,8 +170,19 @@ var actions = map[string]action{
 			}
 
 			path := args[1]
+			if !util.FileExists(path) {
+				println("file not found:", path)
+				return
+			}
 			if !isItemplate(path) {
 				println("not an itemplate:", path)
+				return
+			}
+			fullsrc, _ := fpath.Abs(state.srcDir)
+			fullpath, _ := fpath.Abs(path)
+
+			if !strings.HasPrefix(fullpath, fullsrc) {
+				println("file not in srcDir")
 				return
 			}
 
@@ -179,6 +190,14 @@ var actions = map[string]action{
 			pathIndex = make(Index)
 			buildIndex(state, state.srcDir, genv.New())
 			env := pathIndex[path]
+
+			if env == nil {
+				env = pathIndex[fpath.Join(state.srcDir, path)]
+			}
+			if env == nil {
+				println("cannot render file:", path)
+				return
+			}
 
 			t := createTemplate()
 			printLog("loading includes", state.includesDir)
