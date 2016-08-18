@@ -580,7 +580,7 @@ func newSampleProject(dirname string) error {
 	|- A templated file needs an id to be added to the index.
 	|- Being added to the index means certain
 	|- operations are allowed such as getting the path for the
-	|- indexed file (see urlfor below)
+	|- indexed file (see invocations of urlfor)
 	|id: home
 	|
 	|- Of course, arbtrary entries can be added to the env
@@ -598,11 +598,12 @@ func newSampleProject(dirname string) error {
 	|{{range (with_env "category" "article")}}
 	|<li><a href="{{url .path}}">{{.title}}</a></li>
 	|{{end}}
+	|<p>value of x is {{.x}}</p>
 	|</ul>`))
 
 	createFile(join(srcDir, defaultProtosDir, protoFile), detabf(`
 	|----------------------
-	|- prototypes uses [ [ delimeters from the
+	|- prototypes uses [ [ delimeters, different from the
 	|- usual delimeters { {
 	|
 	|id: [[genid]]
@@ -621,7 +622,7 @@ func newSampleProject(dirname string) error {
 
 	|<p>Hello, this is a greeting with no intrinsic value
 	|See the other equally-useless <a href='{{urlfor "sample"}}'>article</a>
-	|{{template "emphasize" "u sock"}}
+	|{{template "emphasize" "emphasized phrase"}}
 	|</p>`))
 
 	createFile(join(srcDir, "articles", "sample.html"), detabf(`
@@ -632,9 +633,9 @@ func newSampleProject(dirname string) error {
 	|layout: other.html
 	|--------
 
-	|url: {{url "/a/socio/path"}}
+	|url: {{url "/some/path/here"}}
 	|<p>A sample page with sample links</a>
-	|<a href="sample-files/verbatim.html">verbatim file</a>`))
+	|<a href='{{url "/sample-files/verbatim.html"}}'>verbatim file</a>`))
 
 	createFile(join(srcDir, "sample-files", "verbatim.html"), detabf(`
 	|<p>An html file with no layout</p>`))
