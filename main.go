@@ -7,6 +7,7 @@ import (
 	"github.com/nvlled/gost/util"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -90,7 +91,7 @@ func main() {
 	cliOpts, flagSet := parseArgs(os.Args[1:], defaultOpts)
 
 	// srcDir and destDir are relative to dir of optsfile
-	baseDir := "."
+	baseDir, _ := filepath.Abs(".")
 
 	if cliOpts.optsfile != nil {
 		baseDir = path.Dir(*cliOpts.optsfile)
@@ -103,9 +104,18 @@ func main() {
 		fileOpts = opts
 	} else {
 		opts, err := readOptsFile(*defaultOpts.optsfile, defaultOpts)
-		if err == nil {
-			fileOpts = opts
+		if err != nil {
+			baseDir = path.Dir(baseDir)
+			optsfile := path.Join(baseDir, *defaultOpts.optsfile)
+			opts, err = readOptsFile(optsfile, defaultOpts)
 		}
+		if err != nil {
+			println("*** failed to read optsfile")
+			println(err.Error())
+			return
+		}
+
+		fileOpts = opts
 	}
 	opts := defaultOpts.merge(fileOpts).merge(cliOpts)
 
