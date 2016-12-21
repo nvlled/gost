@@ -14,6 +14,19 @@ var globalFuncMap = template.FuncMap{
 	"date": func() string {
 		return time.Now().Format("Mon, 02 Jan 2006 MST")
 	},
+	"equals": func(x, y interface{}) bool {
+		yep := false
+		wah := func() {
+			defer func() {
+				if (recover() != nil) {
+					yep = false
+				}
+			} ()
+			yep = x.(string) == y.(string)
+		}
+		wah()
+		return yep
+	},
 
 	// These stub functions are included
 	// in the funcMap so that includes and layouts
