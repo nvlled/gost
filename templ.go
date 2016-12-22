@@ -18,14 +18,23 @@ var globalFuncMap = template.FuncMap{
 		yep := false
 		wah := func() {
 			defer func() {
-				if (recover() != nil) {
+				if recover() != nil {
 					yep = false
 				}
-			} ()
+			}()
 			yep = x.(string) == y.(string)
 		}
 		wah()
 		return yep
+	},
+	"when": func(cond bool, conseq string, alt ...string) string {
+		if cond {
+			return conseq
+		}
+		if len(alt) > 0 {
+			return alt[0]
+		}
+		return ""
 	},
 
 	// These stub functions are included
