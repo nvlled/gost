@@ -86,51 +86,56 @@ func printLog(args ...interface{}) {
 
 func main() {
 	prog := os.Args[0]
-
 	fileOpts := new(gostOpts)
 	cliOpts, flagSet := parseArgs(os.Args[1:], defaultOpts)
 
-	// srcDir and destDir are relative to dir of optsfile
-	baseDir, _ := filepath.Abs(".")
+	createOpts := func() *gostOpts {
 
-	if cliOpts.optsfile != nil {
-		baseDir = path.Dir(*cliOpts.optsfile)
-		opts, err := readOptsFile(*cliOpts.optsfile, defaultOpts)
-		if err != nil {
-			println("*** failed to read optsfile")
-			println(err.Error())
-			return
-		}
-		fileOpts = opts
-	} else {
-		opts, err := readOptsFile(*defaultOpts.optsfile, defaultOpts)
-		if err != nil {
-			baseDir = path.Dir(baseDir)
-			optsfile := path.Join(baseDir, *defaultOpts.optsfile)
-			opts, err = readOptsFile(optsfile, defaultOpts)
-		}
-		if err != nil {
-			println("*** failed to read optsfile")
-			println(err.Error())
-			return
-		}
+		// srcDir and destDir are relative to dir of optsfile
+		baseDir, _ := filepath.Abs(".")
 
-		fileOpts = opts
+		if cliOpts.optsfile != nil {
+			baseDir = path.Dir(*cliOpts.optsfile)
+			opts, err := readOptsFile(*cliOpts.optsfile, defaultOpts)
+			if err != nil {
+				println("*** no gostopts file found")
+				//println(err.Error())
+				//return nil
+			}
+			fileOpts = opts
+		} else {
+			opts, err := readOptsFile(*defaultOpts.optsfile, defaultOpts)
+			if err != nil {
+				baseDir = path.Dir(baseDir)
+				optsfile := path.Join(baseDir, *defaultOpts.optsfile)
+				opts, err = readOptsFile(optsfile, defaultOpts)
+			}
+			if err != nil {
+				println("*** no gostopts file found")
+				//println(err.Error())
+				//return nil
+			}
+
+			fileOpts = opts
+		}
+		opts := defaultOpts.merge(fileOpts).merge(cliOpts)
+
+		prependBase := func(dir string) *string {
+			if dir == "" {
+				// avoid returning "." when dir is ""
+				return &dir
+			}
+			var s string
+			s = util.PrependPath(dir, baseDir)
+			return &s
+		}
+		opts.srcDir = prependBase(*opts.srcDir)
+		opts.destDir = prependBase(*opts.destDir)
+
+		return opts
 	}
-	opts := defaultOpts.merge(fileOpts).merge(cliOpts)
 
-	prependBase := func(dir string) *string {
-		if dir == "" {
-			// avoid returning "." when dir is ""
-			return &dir
-		}
-		var s string
-		s = util.PrependPath(dir, baseDir)
-		return &s
-	}
-	opts.srcDir = prependBase(*opts.srcDir)
-	opts.destDir = prependBase(*opts.destDir)
-
+	opts := createOpts()
 	verbose = *opts.verbose
 	if len(os.Args) < 2 && *opts.srcDir == "" {
 		usage(prog, flagSet)
@@ -148,12 +153,15 @@ func main() {
 
 	if !ok {
 		println("unknown action:", name)
-	} else if *opts.help {
+		return
+	}
+
+	if *opts.help {
 		fmt.Printf(action.help, prog, name)
 		println()
 	} else {
 		defer handleValidation()
-		action.fn(opts, args)
+		action.handler(opts, args)
 	}
 }
 

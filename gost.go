@@ -41,19 +41,18 @@ var srcDestDiff = newValidator(notEqual("srcDir", "destDir"), "source and destin
 var fullCheck = []validator{srcDirSet, srcDirExists, destDirSet, srcDestDiff}
 
 type action struct {
-	help string
-	fn   func(*gostOpts, []string)
+	help    string
+	handler func(*gostOpts, []string)
 }
 
 var actions = map[string]action{
 	"new": action{
-		util.Detab(`usage: %s %s <projectname>
-
-		|Creates a new (sample) project based on a prototype.
-		|The project is placed on a directory
-		|named <projectname>.
+		help: util.Detab(`usage: %s %s <projectname>
+                |Creates a new (sample) project based on a prototype.
+                |The project is placed on a directory
+                |named <projectname>.
 		`),
-		func(_ *gostOpts, args []string) {
+		handler: func(_ *gostOpts, args []string) {
 			if len(args) < 2 {
 				fmt.Printf("missing args: %s <name>\n", args[0])
 				return
@@ -70,30 +69,30 @@ var actions = map[string]action{
 		},
 	},
 	"build": action{
-		util.Detab(`usage: %s --srcDir <dir> --destDir <dir> %s
+		help: util.Detab(`usage: %s --srcDir <dir> --destDir <dir> %s
 
-		|Builds the projects from srcDir and stores
-		|them in destDir. srcDir and destDir may also be
-		|specified in the opts file.
+                |Builds the projects from srcDir and stores
+                |them in destDir. srcDir and destDir may also be
+                |specified in the opts file.
 
-		|srcDir and destDir must not be the same.
-		`),
-		func(opts *gostOpts, _ []string) {
+                |srcDir and destDir must not be the same.
+                `),
+		handler: func(opts *gostOpts, _ []string) {
 			validateOpts(opts, fullCheck...)
 			state := optsToState(opts)
 			runBuild(state)
 		},
 	},
 	"watch": action{
-		util.Detab(`usage: %s --srcDir <dir> --destDir <dir> %s
+		help: util.Detab(`usage: %s --srcDir <dir> --destDir <dir> %s
 
-		|Same as build action, but watches the
-		|srcDir for changes (such creation
-		|of a new file or modification of an
-		|existing file) and then re-builds the project
-		|accordingly..
-		`),
-		func(opts *gostOpts, _ []string) {
+                |Same as build action, but watches the
+                |srcDir for changes (such creation
+                |of a new file or modification of an
+                |existing file) and then re-builds the project
+                |accordingly..
+                `),
+		handler: func(opts *gostOpts, _ []string) {
 			validateOpts(opts, fullCheck...)
 			state := optsToState(opts)
 			runBuild(state)
@@ -114,31 +113,31 @@ var actions = map[string]action{
 		},
 	},
 	"clean": action{
-		util.Detab(`usage: %s --srcDir <dir> --destDir <dir> %s
+		help: util.Detab(`usage: %s --srcDir <dir> --destDir <dir> %s
 
-		|Removes all the files created from a build action.
-		|If dest is a directory created from build action,
-		|as indicated by the presence of .gost-distdel in it,
-		|then it is deleted.
-		`),
-		func(opts *gostOpts, _ []string) {
+                |Removes all the files created from a build action.
+                |If dest is a directory created from build action,
+                |as indicated by the presence of .gost-distdel in it,
+                |then it is deleted.
+                `),
+		handler: func(opts *gostOpts, _ []string) {
 			validateOpts(opts, fullCheck...)
 			state := optsToState(opts)
 			cleanBuildDir(state)
 		},
 	},
 	"newfile": action{
-		util.Detab(`usage: %s --srcDir <dir> %s <filename>
+		help: util.Detab(`usage: %s --srcDir <dir> %s <filename>
 
-		|Creates a file in the project.
-		|Directory of <filename> must be relative to
-		|the srcDir.
-		|Example: newfile posts/hello.html
+                |Creates a file in the project.
+                |Directory of <filename> must be relative to
+                |the srcDir.
+                |Example: newfile posts/hello.html
 
-		|Also, env of the directory of <filename>
-		|must contain a proto entry.
-		`),
-		func(opts *gostOpts, args []string) {
+                |Also, env of the directory of <filename>
+                |must contain a proto entry.
+                `),
+		handler: func(opts *gostOpts, args []string) {
 			validateOpts(opts, srcDirSet, srcDirExists)
 			state := optsToState(opts)
 			defer catchError()
@@ -156,11 +155,11 @@ var actions = map[string]action{
 		},
 	},
 	"render": action{
-		util.Detab(`usage: %s --srcDir <dir> %s <filename>
+		help: util.Detab(`usage: %s --srcDir <dir> %s <filename>
 
-		|Renders an itemplate in the stdout.
-		`),
-		func(opts *gostOpts, args []string) {
+                |Renders an itemplate in the stdout.
+                `),
+		handler: func(opts *gostOpts, args []string) {
 			validateOpts(opts, srcDirSet, srcDirExists)
 			state := optsToState(opts)
 
@@ -215,11 +214,11 @@ var actions = map[string]action{
 		},
 	},
 	"show-env": action{
-		util.Detab(`usage: %s --srcDir <dir> %s <filename>
+		help: util.Detab(`usage: %s --srcDir <dir> %s <filename>
 
-		|Shows the complete env for a directory or itemplate.
-		`),
-		func(opts *gostOpts, args []string) {
+                |Shows the complete env for a directory or itemplate.
+                `),
+		handler: func(opts *gostOpts, args []string) {
 			validateOpts(opts, srcDirSet, srcDirExists)
 			state := optsToState(opts)
 
@@ -479,178 +478,178 @@ func newSampleProject(dirname string) error {
 	// TODO: remove hardcoded values
 
 	createFile(defaultOptsfile, detabf(`
-	|--srcDir %s
-	|--destDir %s`, srcDir, destDir))
+    |--srcDir %s
+    |--destDir %s`, srcDir, destDir))
 
 	createFile(join(srcDir, genv.FILENAME), detabf(`
-	|- This file is the base-env
+    |- This file is the base-env
 
-	|sitename: %s
+    |sitename: %s
 
-	|- Takes the filename of the layout in the
-	|- layouts-dir. Since this is in the base-env,
-	|- all html files will this default layout unless
-	|- overriden.
-	|layout: %s
+    |- Takes the filename of the layout in the
+    |- layouts-dir. Since this is in the base-env,
+    |- all html files will this default layout unless
+    |- overriden.
+    |layout: %s
 
-	|- verbatim files are copied as is
-	|verbatim-files: sample-files/
+    |- verbatim files are copied as is
+    |verbatim-files: sample-files/
 
-	|- exclude files are not include in the build output
-	|exclude-files: trash/
+    |- exclude files are not include in the build output
+    |exclude-files: trash/
 
-	|- Contains snippets of html files
-	|- that can be included in other files.
-	|- (See docs for text/template)
-	|- Each snippet must be explicitly defined using
-	|- {{define "name"}}
-	|includes-dir:
+    |- Contains snippets of html files
+    |- that can be included in other files.
+    |- (See docs for text/template)
+    |- Each snippet must be explicitly defined using
+    |- {{define "name"}}
+    |includes-dir:
 
-	|- Contains whole file layouts for
-	|- html files. The filename (including the file extension)
-	|- will be used as the value for the env entry 'template'. No
-	|- need to put {{define "name"}} for each layout file.
-	|layouts-dir:
+    |- Contains whole file layouts for
+    |- html files. The filename (including the file extension)
+    |- will be used as the value for the env entry 'template'. No
+    |- need to put {{define "name"}} for each layout file.
+    |layouts-dir:
 
-	|- Contains prototypes used when newfile action is used
-	|- to create new project files. As in the layouts-dir,
-	|- no need to explicitly define a name for the template.
-	|protos-dir:
+    |- Contains prototypes used when newfile action is used
+    |- to create new project files. As in the layouts-dir,
+    |- no need to explicitly define a name for the template.
+    |protos-dir:
 
-	|- If set, urls created with calls to url and urlfor
-	|- will be relative urls as opposed to be absolute urls
-	|relative-url: true
+    |- If set, urls created with calls to url and urlfor
+    |- will be relative urls as opposed to be absolute urls
+    |relative-url: true
 
-	`, dirname, layoutFile))
+    `, dirname, layoutFile))
 
 	createFile(join(srcDir, "articles", genv.FILENAME), detabf(`
-	|- A template for creating new files in this directory.
-	|- example: gost newfile articles/weebosites.html
-	|- The value of proto must be a filename in protos-dir.
-	|proto: %s
+    |- A template for creating new files in this directory.
+    |- example: gost newfile articles/weebosites.html
+    |- The value of proto must be a filename in protos-dir.
+    |proto: %s
 
-	|category: article`, protoFile))
+    |category: article`, protoFile))
 
 	createFile(join(srcDir, defaultLayoutsDir, layoutFile), detabf(`
-	|<html lang="en">
-	|<head>
-	|<meta charset="UTF-8">
-	|<title>{{with .title}}{{.}} - {{end}}{{.sitename}}</title>
-	|<link rel="stylesheet" href='{{url "/styles/site.css"}}' />
-	|</head>
-	|<body>
-	|<div id="wrapper">
-	|<a href='{{urlfor "home"}}'>home</a>
-	|<h2>{{.title}}</h2>
-	|{{.contents}}
-	|</div>
-	|</body>
-	|</html>`))
+    |<html lang="en">
+    |<head>
+    |<meta charset="UTF-8">
+    |<title>{{with .title}}{{.}} - {{end}}{{.sitename}}</title>
+    |<link rel="stylesheet" href='{{url "/styles/site.css"}}' />
+    |</head>
+    |<body>
+    |<div id="wrapper">
+    |<a href='{{urlfor "home"}}'>home</a>
+    |<h2>{{.title}}</h2>
+    |{{.contents}}
+    |</div>
+    |</body>
+    |</html>`))
 
 	createFile(join(srcDir, defaultLayoutsDir, "other.html"), detabf(`
-	|<html lang="en">
-	|<body>
-	|<div id="sidebar">
-	|<a href='{{urlfor "home"}}'>home</a>
-	|<a href='{{urlfor "hello"}}'>hello</a>
-	|</div>
-	|<div id="contents">
-	|{{.contents}}
-	|</div>
-	|<div id="footer">fock semantic tags</div>
-	|</body>
-	|</html>`))
+    |<html lang="en">
+    |<body>
+    |<div id="sidebar">
+    |<a href='{{urlfor "home"}}'>home</a>
+    |<a href='{{urlfor "hello"}}'>hello</a>
+    |</div>
+    |<div id="contents">
+    |{{.contents}}
+    |</div>
+    |<div id="footer">fock semantic tags</div>
+    |</body>
+    |</html>`))
 
 	createFile(join(srcDir, defaultIncludesDir, "includes.html"), detabf(`
-	|{{define "emphasize"}}
-	|<em><blink>__{{.}}__</blink><em>
-	|{{end}}
-	`))
+    |{{define "emphasize"}}
+    |<em><blink>__{{.}}__</blink><em>
+    |{{end}}
+    `))
 
 	createFile(join(srcDir, "index.html"), detabf(`
-	|-------------------------
-	|- Lines without colon are ignored, such as this one.
-	|- I'm using my sloppy programming as an
-	|- opportunity to squeeze some docs here.
-	|-
-	|- The env lines must at least be 3 dashes long.
-	|- The beginning and closing line must also
-	|- match in length.
-	|
-	|- A templated file needs an id to be added to the index.
-	|- Being added to the index means certain
-	|- operations are allowed such as getting the path for the
-	|- indexed file (see invocations of urlfor)
-	|id: home
-	|
-	|- Of course, arbtrary entries can be added to the env
-	|- and they can be accessed using the dot notation
-	|x: 100
-	|y: 200
-	|message: Hello, some cursory  docs can be found here
-	|title: Welcome
-	|-------------------------
+    |-------------------------
+    |- Lines without colon are ignored, such as this one.
+    |- I'm using my sloppy programming as an
+    |- opportunity to squeeze some docs here.
+    |-
+    |- The env lines must at least be 3 dashes long.
+    |- The beginning and closing line must also
+    |- match in length.
+    |
+    |- A templated file needs an id to be added to the index.
+    |- Being added to the index means certain
+    |- operations are allowed such as getting the path for the
+    |- indexed file (see invocations of urlfor)
+    |id: home
+    |
+    |- Of course, arbtrary entries can be added to the env
+    |- and they can be accessed using the dot notation
+    |x: 100
+    |y: 200
+    |message: Hello, some cursory  docs can be found here
+    |title: Welcome
+    |-------------------------
 
-	|<p>This is the home page</p>
+    |<p>This is the home page</p>
 
-	|<h3>articles</h3>
-	|<ul>
-	|{{range (with_env "category" "article")}}
-	|<li><a href="{{url .path}}">{{.title}}</a></li>
-	|{{end}}
-	|<p>value of x is {{.x}}</p>
-	|</ul>`))
+    |<h3>articles</h3>
+    |<ul>
+    |{{range (with_env "category" "article")}}
+    |<li><a href="{{url .path}}">{{.title}}</a></li>
+    |{{end}}
+    |<p>value of x is {{.x}}</p>
+    |</ul>`))
 
 	createFile(join(srcDir, defaultProtosDir, protoFile), detabf(`
-	|----------------------
-	|- prototypes uses [ [ delimeters, different from the
-	|- usual delimeters { {
-	|
-	|id: [[genid]]
-	|title: [[.title]]
-	|date: [[date]]
-	|----------------------
+    |----------------------
+    |- prototypes uses [ [ delimeters, different from the
+    |- usual delimeters { {
+        |
+        |id: [[genid]]
+        |title: [[.title]]
+        |date: [[date]]
+        |----------------------
 
-	|<p>id: {{.id}}</p>
-	|<p>pikachu elf is fake</p>`))
+        |<p>id: {{.id}}</p>
+        |<p>pikachu elf is fake</p>`))
 
 	createFile(join(srcDir, "articles", "hello.html"), detabf(`
-	|--------
-	|id: hello
-	|title: Title is hello
-	|--------
+        |--------
+        |id: hello
+        |title: Title is hello
+        |--------
 
-	|<p>Hello, this is a greeting with no intrinsic value
-	|See the other equally-useless <a href='{{urlfor "sample"}}'>article</a>
-	|{{template "emphasize" "emphasized phrase"}}
-	|</p>`))
+        |<p>Hello, this is a greeting with no intrinsic value
+        |See the other equally-useless <a href='{{urlfor "sample"}}'>article</a>
+        |{{template "emphasize" "emphasized phrase"}}
+        |</p>`))
 
 	createFile(join(srcDir, "articles", "sample.html"), detabf(`
-	|--------
-	|id: sample
-	|title: A title
-	|- override default layout
-	|layout: other.html
-	|--------
+        |--------
+        |id: sample
+        |title: A title
+        |- override default layout
+        |layout: other.html
+        |--------
 
-	|url: {{url "/some/path/here"}}
-	|<p>A sample page with sample links</a>
-	|<a href='{{url "/sample-files/verbatim.html"}}'>verbatim file</a>`))
+        |url: {{url "/some/path/here"}}
+        |<p>A sample page with sample links</a>
+        |<a href='{{url "/sample-files/verbatim.html"}}'>verbatim file</a>`))
 
 	createFile(join(srcDir, "sample-files", "verbatim.html"), detabf(`
-	|<p>An html file with no layout</p>`))
+        |<p>An html file with no layout</p>`))
 
 	createFile(join(srcDir, "trash", "testfile"), detabf(`
-	|a discarded file but not yet deleted for possible future reference
-	|this will not be included in the build
-	`))
+        |a discarded file but not yet deleted for possible future reference
+        |this will not be included in the build
+        `))
 
 	createFile(join(srcDir, "styles", "site.css"), detabf(`
-	|#wrapper {
-	|	width: 800px;
-	|	margin: auto;
-	|}
-	`))
+        |#wrapper {
+            |	width: 800px;
+            |	margin: auto;
+            |}
+            `))
 
 	printLog("*** done")
 	return nil

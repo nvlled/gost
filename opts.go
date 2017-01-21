@@ -22,6 +22,14 @@ type gostOpts struct {
 // * non-nil values in opts_ takes priority
 // * no mutation is done in both given opts
 func (opts *gostOpts) merge(opts_ *gostOpts) *gostOpts {
+
+	if opts == nil {
+		return opts_
+	}
+	if opts_ == nil {
+		return opts
+	}
+
 	newOpts := *opts
 	if opts_.srcDir != nil {
 		newOpts.srcDir = opts_.srcDir
